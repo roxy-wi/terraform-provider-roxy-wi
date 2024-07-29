@@ -73,11 +73,6 @@ A resource for managing UDP listeners.
 
 A resource for managing groups.
 
-#### Arguments
-
-- `name` (Required, String) - Name of the group.
-- `description` (Optional, String) - Description of the group.
-
 
 ## License
 
