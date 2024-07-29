@@ -20,21 +20,21 @@ provider "roxywi" {
 }
 
 resource "roxywi_udp_listener" "example" {
-  cluster_id = 1
-  config = [{
+  config {
     backend_ip = "192.168.1.100"
-    port = "9997"
-    weight = "50"
-  },{
+    port = 9997
+    weight = 50
+  }
+  сonfig {
     backend_ip = "192.168.2.100"
-    port = "443"
-    weight = "50"
-  }]
+    port = 443
+    weight = 50
+  }
   description = "Example UDP listener"
-  group_id = "2"
-  lb_algo = "Round robin"
-  name = "example_listener"
-  port = "1234"
+  group_id = 2
+  lb_algo = "rr"
+  name = "example listener"
+  port = 1234
   server_id = 1
   vip = "192.168.1.100"
 }
@@ -45,8 +45,8 @@ resource "roxywi_udp_listener" "example" {
 
 ### Required
 
-- `config` (Block Set, Min: 1) Configuration for the backend servers. (see [below for nested schema](#nestedblock--config))
-- `lb_algo` (String) Load balancing algorithm. Available values are: [Round robin Weighted Round Robin Least Connection Weighted Least Connection Source Hashing Destination Hashing Locality-Based Least Connection]
+- `config` (Block List, Min: 1) Configuration for the backend servers. (see [below for nested schema](#nestedblock--config))
+- `lb_algo` (String) Load balancing algorithm. Available values are: [rr wrr lc wlc sh dh lblc]
 - `name` (String) The name of the UDP listener.
 - `port` (String) Port on which the UDP listener will listen.
 - `vip` (String) Virtual IP address.
@@ -57,6 +57,7 @@ resource "roxywi_udp_listener" "example" {
 - `description` (String) The description of the UDP listener.
 - `group_id` (String) ID of the group.
 - `server_id` (Number) ID of the server.
+- `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 
 ### Read-Only
 
@@ -68,5 +69,15 @@ resource "roxywi_udp_listener" "example" {
 Required:
 
 - `backend_ip` (String) IP address of the backend server.
-- `port` (String) Port of the backend server.
-- `weight` (String) Weight of the backend server.
+- `port` (Number) Port of the backend server.
+- `weight` (Number) Weight of the backend server.
+
+
+<a id="nestedblock--timeouts"></a>
+### Nested Schema for `timeouts`
+
+Optional:
+
+- `create` (String)
+- `delete` (String)
+- `update` (String)

@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"strings"
+	"time"
 
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -24,24 +27,32 @@ const (
 )
 
 var validLbAlgorithms = []string{
-	"Round robin",
-	"Weighted Round Robin",
-	"Least Connection",
-	"Weighted Least Connection",
-	"Source Hashing",
-	"Destination Hashing",
-	"Locality-Based Least Connection",
+	"rr",
+	"wrr",
+	"lc",
+	"wlc",
+	"sh",
+	"dh",
+	"lblc",
 }
 
 func resourceUdpListener() *schema.Resource {
 	return &schema.Resource{
-		CreateContext: resourceUdpListenerCreate,
-		ReadContext:   resourceUdpListenerRead,
-		UpdateContext: resourceUdpListenerUpdate,
-		DeleteContext: resourceUdpListenerDelete,
+		CreateWithoutTimeout: resourceUdpListenerCreate,
+		ReadWithoutTimeout:   resourceUdpListenerRead,
+		UpdateWithoutTimeout: resourceUdpListenerUpdate,
+		DeleteWithoutTimeout: resourceUdpListenerDelete,
+
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
 		},
+
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(30 * time.Minute),
+		},
+
 		Description: "Manage UDP listeners in Roxy-WI. All servers managed via Roxy-WI can be included in groups.",
 
 		Schema: map[string]*schema.Schema{
@@ -53,7 +64,7 @@ func resourceUdpListener() *schema.Resource {
 				Description:  "ID of the cluster.",
 			},
 			ConfigField: {
-				Type:        schema.TypeSet,
+				Type:        schema.TypeList,
 				Required:    true,
 				Description: "Configuration for the backend servers.",
 				Elem: &schema.Resource{
@@ -64,12 +75,12 @@ func resourceUdpListener() *schema.Resource {
 							Description: "IP address of the backend server.",
 						},
 						BackendPortField: {
-							Type:        schema.TypeString,
+							Type:        schema.TypeInt,
 							Required:    true,
 							Description: "Port of the backend server.",
 						},
 						BackendWeightField: {
-							Type:        schema.TypeString,
+							Type:        schema.TypeInt,
 							Required:    true,
 							Description: "Weight of the backend server.",
 						},
@@ -130,13 +141,13 @@ func resourceUdpListenerCreate(ctx context.Context, d *schema.ResourceData, m in
 		return diag.FromErr(err)
 	}
 
-	description := d.Get(DescriptionField).(string)
+	description := strings.ReplaceAll(d.Get(DescriptionField).(string), "'", "")
+	name := strings.ReplaceAll(d.Get(NameField).(string), "'", "")
 	groupID := d.Get(GroupIdField).(string)
 	lbAlgo := d.Get(LbAlgorithmField).(string)
-	name := d.Get(NameField).(string)
 	port := d.Get(PortField).(string)
 
-	configs := parseConfigSet(d.Get(ConfigField).(*schema.Set))
+	configs := parseConfigList(d.Get(ConfigField).([]interface{}))
 
 	requestBody := map[string]interface{}{
 		ClusterIdField:   clusterID,
@@ -183,19 +194,24 @@ func resourceUdpListenerRead(ctx context.Context, d *schema.ResourceData, m inte
 		return diag.FromErr(err)
 	}
 
-	d.Set(ClusterIdField, result[ClusterIdField])
-	d.Set(DescriptionField, result[DescriptionField])
-	d.Set(GroupIdField, result[GroupIdField])
+	d.Set(ClusterIdField, intFromInterface(result[ClusterIdField]))
+	description := strings.ReplaceAll(result[DescriptionField].(string), "'", "")
+	name := strings.ReplaceAll(result[NameField].(string), "'", "")
+	d.Set(DescriptionField, description)
+	d.Set(NameField, name)
+	d.Set(GroupIdField, intFromInterface(result[GroupIdField]))
 	d.Set(LbAlgorithmField, result[LbAlgorithmField])
-	d.Set(NameField, result[NameField])
-	d.Set(PortField, result[PortField])
-	d.Set(ServerIdField, result[ServerIdField])
+	d.Set(PortField, intFromInterface(result[PortField]))
+	d.Set(ServerIdField, intFromInterface(result[ServerIdField]))
 	d.Set(VIPField, result[VIPField])
 
-	if config, ok := result["config"].([]interface{}); ok {
-		configSet := parseConfigResult(config)
-		d.Set(ConfigField, configSet)
+	config, err := parseConfig(result["config"])
+	if err != nil {
+		return diag.FromErr(err)
 	}
+
+	configList := parseConfigResult(config)
+	d.Set(ConfigField, configList)
 
 	return nil
 }
@@ -212,13 +228,13 @@ func resourceUdpListenerUpdate(ctx context.Context, d *schema.ResourceData, m in
 		return diag.FromErr(err)
 	}
 
-	description := d.Get(DescriptionField).(string)
+	description := strings.ReplaceAll(d.Get(DescriptionField).(string), "'", "")
+	name := strings.ReplaceAll(d.Get(NameField).(string), "'", "")
 	groupID := d.Get(GroupIdField).(string)
 	lbAlgo := d.Get(LbAlgorithmField).(string)
-	name := d.Get(NameField).(string)
 	port := d.Get(PortField).(string)
 
-	configs := parseConfigSet(d.Get(ConfigField).(*schema.Set))
+	configs := parseConfigList(d.Get(ConfigField).([]interface{}))
 
 	requestBody := map[string]interface{}{
 		ClusterIdField:   clusterID,
@@ -253,50 +269,65 @@ func resourceUdpListenerDelete(ctx context.Context, d *schema.ResourceData, m in
 	return nil
 }
 
-func parseConfigSet(configSet *schema.Set) []map[string]interface{} {
+func parseConfigList(configList []interface{}) []map[string]interface{} {
 	var configs []map[string]interface{}
-	for _, config := range configSet.List() {
+	for _, config := range configList {
 		configDetails := config.(map[string]interface{})
 		configs = append(configs, map[string]interface{}{
 			BackendIPField:     configDetails[BackendIPField].(string),
-			BackendPortField:   configDetails[BackendPortField].(string),
-			BackendWeightField: configDetails[BackendWeightField].(string),
+			BackendPortField:   intFromInterface(configDetails[BackendPortField]),
+			BackendWeightField: intFromInterface(configDetails[BackendWeightField]),
 		})
 	}
 	return configs
 }
 
-func parseConfigResult(config []interface{}) *schema.Set {
-	configSet := schema.NewSet(schema.HashResource(&schema.Resource{
-		Schema: map[string]*schema.Schema{
-			BackendIPField: {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "IP address of the backend server.",
-			},
-			BackendPortField: {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "Port of the backend server.",
-			},
-			BackendWeightField: {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "Weight of the backend server.",
-			},
-		},
-	}), nil)
+func parseConfig(config interface{}) ([]map[string]interface{}, error) {
+	switch v := config.(type) {
+	case string:
+		var parsedConfig []map[string]interface{}
+		log.Printf("[DEBUG] Config string before parsing: %s", v)
+		v = strings.ReplaceAll(v, "'", "\"")
+		if err := json.Unmarshal([]byte(v), &parsedConfig); err != nil {
+			return nil, fmt.Errorf("failed to parse config field: %v", err)
+		}
+		return parsedConfig, nil
+	case []interface{}:
+		var parsedConfig []map[string]interface{}
+		for _, item := range v {
+			parsedConfig = append(parsedConfig, item.(map[string]interface{}))
+		}
+		return parsedConfig, nil
+	default:
+		return nil, fmt.Errorf("invalid config format: %v", config)
+	}
+}
 
+func parseConfigResult(config []map[string]interface{}) []interface{} {
+	var configList []interface{}
 	for _, c := range config {
-		configDetails := c.(map[string]interface{})
-		configSet.Add(map[string]interface{}{
-			BackendIPField:     configDetails[BackendIPField].(string),
-			BackendPortField:   configDetails[BackendPortField].(string),
-			BackendWeightField: configDetails[BackendWeightField].(string),
+		configList = append(configList, map[string]interface{}{
+			BackendIPField:     c[BackendIPField].(string),
+			BackendPortField:   intFromInterface(c[BackendPortField]),
+			BackendWeightField: intFromInterface(c[BackendWeightField]),
 		})
 	}
+	return configList
+}
 
-	return configSet
+func intFromInterface(value interface{}) int {
+	switch v := value.(type) {
+	case float64:
+		return int(v)
+	case int:
+		return v
+	case int32:
+		return int(v)
+	case int64:
+		return int(v)
+	default:
+		return 0
+	}
 }
 
 func validateLbAlgorithm() schema.SchemaValidateDiagFunc {
@@ -341,19 +372,38 @@ func checkVipExists(client *Client, clusterID, serverID int, vip string) error {
 		return fmt.Errorf("either cluster_id or server_id must be specified")
 	}
 
+	log.Printf("[DEBUG] Checking VIP existence with URL: %s", url)
+
 	resp, err := client.doRequest("GET", url, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to do request: %v", err)
 	}
 
-	var result []map[string]interface{}
-	if err := json.Unmarshal(resp, &result); err != nil {
-		return err
-	}
+	log.Printf("[DEBUG] Response from VIP check: %s", string(resp))
 
-	for _, item := range result {
-		if itemVip, ok := item["vip"].(string); ok && itemVip == vip {
-			return nil
+	if clusterID != 0 {
+		var result []map[string]interface{}
+		if err := json.Unmarshal(resp, &result); err != nil {
+			return fmt.Errorf("failed to unmarshal response: %v", err)
+		}
+
+		for _, item := range result {
+			if itemVip, ok := item["vip"].(string); ok && itemVip == vip {
+				return nil
+			}
+		}
+	} else {
+		var ips []string
+		if err := json.Unmarshal(resp, &ips); err != nil {
+			return fmt.Errorf("failed to unmarshal response: %v", err)
+		}
+
+		log.Printf("[DEBUG] Parsed response: %v", ips)
+
+		for _, itemVip := range ips {
+			if itemVip == vip {
+				return nil
+			}
 		}
 	}
 
