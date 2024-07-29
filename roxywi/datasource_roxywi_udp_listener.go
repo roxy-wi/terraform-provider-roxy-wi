@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -25,9 +25,10 @@ func dataSourceUdpListener() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			ListenerIdField: {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "ID of the UDP listener.",
+				Type:         schema.TypeString,
+				Optional:     true,
+				Description:  "ID of the UDP listener.",
+				ExactlyOneOf: []string{ListenerIdField, NameField},
 			},
 			CheckEnabledField: {
 				Type:        schema.TypeInt,
@@ -35,7 +36,7 @@ func dataSourceUdpListener() *schema.Resource {
 				Description: "Check enabled field.",
 			},
 			ClusterIdField: {
-				Type:        schema.TypeString,
+				Type:        schema.TypeInt,
 				Computed:    true,
 				Description: "ID of the cluster.",
 			},
@@ -79,28 +80,9 @@ func dataSourceUdpListener() *schema.Resource {
 				Description: "The description of the UDP listener.",
 			},
 			GroupIdField: {
-				Type:        schema.TypeList,
+				Type:        schema.TypeInt,
 				Computed:    true,
 				Description: "ID of the group.",
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"description": {
-							Type:        schema.TypeString,
-							Computed:    true,
-							Description: "Description of the group.",
-						},
-						"group_id": {
-							Type:        schema.TypeInt,
-							Computed:    true,
-							Description: "ID of the group.",
-						},
-						"name": {
-							Type:        schema.TypeString,
-							Computed:    true,
-							Description: "Name of the group.",
-						},
-					},
-				},
 			},
 			LbAlgorithmField: {
 				Type:        schema.TypeString,
@@ -108,9 +90,10 @@ func dataSourceUdpListener() *schema.Resource {
 				Description: "Load balancing algorithm.",
 			},
 			NameField: {
-				Type:        schema.TypeString,
-				Computed:    true,
-				Description: "The name of the UDP listener.",
+				Type:         schema.TypeString,
+				Optional:     true,
+				Description:  "The name of the UDP listener.",
+				ExactlyOneOf: []string{ListenerIdField, NameField},
 			},
 			PortField: {
 				Type:        schema.TypeInt,
@@ -135,24 +118,77 @@ func dataSourceUdpListener() *schema.Resource {
 		},
 	}
 }
-
 func dataSourceUdpListenerRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
-	id := d.Get(ListenerIdField).(string)
+	id, idExists := d.GetOk(ListenerIdField)
+	name, nameExists := d.GetOk(NameField)
 
-	resp, err := client.doRequest("GET", fmt.Sprintf("/api/udp/listener/%s", id), nil)
+	var result map[string]interface{}
+	var err error
+
+	switch {
+	case idExists:
+		result, err = getListenerByID(client, id.(string))
+	case nameExists:
+		result, err = getListenerByName(client, name.(string))
+	default:
+		return diag.Errorf("Either %s or %s must be specified", ListenerIdField, NameField)
+	}
+
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	var result map[string]interface{}
-	if err := json.Unmarshal(resp, &result); err != nil {
+	if err := setResourceDataFromResult(d, result); err != nil {
 		return diag.FromErr(err)
 	}
 
-	log.Printf("[DEBUG] Received API response: %v", result)
+	return nil
+}
 
-	d.SetId(id)
+func getListenerByID(client *Client, id string) (map[string]interface{}, error) {
+	resp, err := client.doRequest("GET", fmt.Sprintf("/api/udp/listener/%s", id), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(resp, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func getListenerByName(client *Client, name string) (map[string]interface{}, error) {
+	resp, err := client.doRequest("GET", "/api/udp/listeners", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var listeners []map[string]interface{}
+	if err := json.Unmarshal(resp, &listeners); err != nil {
+		return nil, err
+	}
+
+	trimmedName := strings.TrimSpace(name)
+	for _, listener := range listeners {
+		listenerName := strings.TrimSpace(fmt.Sprintf("%v", listener[NameField]))
+		if strings.Trim(listenerName, "'\"") == trimmedName {
+			return listener, nil
+		}
+	}
+
+	return nil, fmt.Errorf("No UDP listener found with name %s", name)
+}
+
+func setResourceDataFromResult(d *schema.ResourceData, result map[string]interface{}) error {
+	id, ok := result[ListenerIdField].(float64)
+	if !ok {
+		return fmt.Errorf("Invalid ID type for listener")
+	}
+	d.SetId(fmt.Sprintf("%d", int(id)))
+
 	setField(d, CheckEnabledField, result[CheckEnabledField])
 	setField(d, ClusterIdField, result[ClusterIdField])
 	setField(d, DelayBeforeRetryField, result[DelayBeforeRetryField])
@@ -162,69 +198,69 @@ func dataSourceUdpListenerRead(ctx context.Context, d *schema.ResourceData, m in
 	setField(d, ServerIdField, result[ServerIdField])
 	setField(d, VIPField, result[VIPField])
 	setField(d, LbAlgorithmField, result[LbAlgorithmField])
-	setField(d, NameField, result[NameField])
+	setField(d, NameField, strings.Trim(fmt.Sprintf("%v", result[NameField]), "'\""))
 	setField(d, PortField, result[PortField])
+	setField(d, GroupIdField, result[GroupIdField])
 
-	if group, ok := result["group_id"].(map[string]interface{}); ok {
-		groupList := []interface{}{
-			map[string]interface{}{
-				"description": group["description"],
-				"group_id":    convertToInt(group["group_id"]),
-				"name":        group["name"],
-			},
-		}
-		d.Set(GroupIdField, groupList)
+	configStr, ok := result["config"].(string)
+	if !ok || configStr == "" {
+		return d.Set(ConfigField, nil)
 	}
 
-	if config, ok := result["config"].([]interface{}); ok {
-		configSet := schema.NewSet(schema.HashResource(&schema.Resource{
-			Schema: map[string]*schema.Schema{
-				BackendIPField: {
-					Type:        schema.TypeString,
-					Computed:    true,
-					Description: "IP address of the backend server.",
-				},
-				BackendPortField: {
-					Type:        schema.TypeInt,
-					Computed:    true,
-					Description: "Port number on which the backend server listens for requests.",
-				},
-				BackendWeightField: {
-					Type:        schema.TypeInt,
-					Computed:    true,
-					Description: "Weight assigned to the backend server.",
-				},
-			},
-		}), nil)
+	configStr = strings.ReplaceAll(configStr, "'", "\"")
 
-		for _, c := range config {
-			configDetails := c.(map[string]interface{})
-			configSet.Add(map[string]interface{}{
-				BackendIPField:     configDetails[BackendIPField].(string),
-				BackendPortField:   convertToInt(configDetails[BackendPortField]),
-				BackendWeightField: convertToInt(configDetails[BackendWeightField]),
-			})
-		}
-
-		d.Set(ConfigField, configSet)
+	var config []map[string]interface{}
+	if err := json.Unmarshal([]byte(configStr), &config); err != nil {
+		return fmt.Errorf("Failed to parse config field: %v", err)
 	}
 
-	return nil
+	if len(config) == 0 {
+		return d.Set(ConfigField, nil)
+	}
+
+	configSet := schema.NewSet(schema.HashResource(&schema.Resource{
+		Schema: map[string]*schema.Schema{
+			BackendIPField: {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "IP address of the backend server.",
+			},
+			BackendPortField: {
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Port number on which the backend server listens for requests.",
+			},
+			BackendWeightField: {
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Weight assigned to the backend server.",
+			},
+		},
+	}), nil)
+
+	for _, c := range config {
+		configSet.Add(map[string]interface{}{
+			BackendIPField:     getStringValue(c["backend_ip"]),
+			BackendPortField:   convertToInt(c["port"]),
+			BackendWeightField: convertToInt(c["weight"]),
+		})
+	}
+
+	return d.Set(ConfigField, configSet)
 }
 
 func setField(d *schema.ResourceData, field string, value interface{}) {
 	if value == nil {
+		d.Set(field, "")
 		return
 	}
 	switch v := value.(type) {
 	case float64:
 		d.Set(field, int(v))
-	case int:
+	case int, int32, int64:
 		d.Set(field, v)
-	case int32:
-		d.Set(field, int(v))
-	case int64:
-		d.Set(field, int(v))
+	case string:
+		d.Set(field, v)
 	default:
 		d.Set(field, v)
 	}
@@ -234,13 +270,16 @@ func convertToInt(value interface{}) int {
 	switch v := value.(type) {
 	case float64:
 		return int(v)
-	case int:
-		return v
-	case int32:
-		return int(v)
-	case int64:
-		return int(v)
+	case int, int32, int64:
+		return v.(int)
 	default:
 		return 0
 	}
+}
+
+func getStringValue(value interface{}) string {
+	if value == nil {
+		return ""
+	}
+	return fmt.Sprintf("%v", value)
 }
