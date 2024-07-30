@@ -6,7 +6,7 @@ The Terraform Provider for Roxy-WI allows you to manage Roxy-WI resources such a
 ## Requirements
 
 - [Terraform](https://www.terraform.io/downloads.html) 0.12+
-- Go 1.12+ (to build the provider)
+- Go 1.22.5+ (to build the provider)
 
 ## Building The Provider
 
@@ -33,7 +33,7 @@ To use the provider, include it in your Terraform configuration:
 
 ```hcl
 provider "roxywi" {
-  base_url = "https://demo.roxy-wi.org/api"
+  base_url = "https://demo.roxy-wi.org/"
   login    = "your-login"
   password = "your-password"
 }
@@ -43,7 +43,7 @@ resource "roxywi_udp_listener" "example" {
   name         = "example_listener"
   port         = 9997
   vip          = "192.168.1.1"
-  lb_algo      = "Round robin"
+  lb_algo      = "rr"
   config {
       backend_ip = "192.168.1.100"
       port       = 443
