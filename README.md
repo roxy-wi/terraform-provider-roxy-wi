@@ -44,18 +44,16 @@ resource "roxywi_udp_listener" "example" {
   port         = 9997
   vip          = "192.168.1.1"
   lb_algo      = "Round robin"
-  config       = [
-    {
+  config {
       backend_ip = "192.168.1.100"
       port       = 443
       weight     = 50
-    },
-    {
+  }
+  config {
       backend_ip = "192.168.1.101"
       port       = 443
       weight     = 50
-    }
-  ]
+  }
 }
 
 data "roxywi_udp_listener" "example" {

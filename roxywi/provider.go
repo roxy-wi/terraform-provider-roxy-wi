@@ -13,9 +13,9 @@ type Config struct {
 }
 
 const (
-	ProviderAPIEndpoint = "base_url"
-	LoginField          = "login"
-	PasswordField       = "password"
+	ProviderBaseURL = "base_url"
+	LoginField      = "login"
+	PasswordField   = "password"
 )
 
 func Provider() *schema.Provider {
@@ -33,11 +33,11 @@ func Provider() *schema.Provider {
 				Description: "Password for Roxy-WI.",
 				DefaultFunc: schema.EnvDefaultFunc("ROXYWI_PASSWORD", nil),
 			},
-			ProviderAPIEndpoint: {
+			ProviderBaseURL: {
 				Type:        schema.TypeString,
 				Required:    true,
 				Description: "URL to connect for Roxy-WI.",
-				DefaultFunc: schema.EnvDefaultFunc("ROXYWI_API_ENDPOINT", "https://demo.roxy-wi.org"),
+				DefaultFunc: schema.EnvDefaultFunc("ROXYWI_BASE_URL", "https://demo.roxy-wi.org"),
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
@@ -68,7 +68,7 @@ func providerConfigure(
 ) (interface{}, diag.Diagnostics) {
 	username := d.Get(LoginField).(string)
 	password := d.Get(PasswordField).(string)
-	apiEndpoint := d.Get(ProviderAPIEndpoint).(string)
+	apiEndpoint := d.Get(ProviderBaseURL).(string)
 
 	userAgent := fmt.Sprintf("terraform/%s", terraformVersion)
 
