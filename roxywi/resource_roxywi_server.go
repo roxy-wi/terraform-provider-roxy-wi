@@ -1,0 +1,177 @@
+package roxywi
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"strings"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+const (
+	CredIDField   = "cred_id"
+	EnabledField  = "enabled"
+	GroupIDField  = "group_id"
+	HostnameField = "hostname"
+	IPField       = "ip"
+)
+
+func resourceServer() *schema.Resource {
+	return &schema.Resource{
+		CreateContext: resourceServerCreate,
+		ReadContext:   resourceServerRead,
+		UpdateContext: resourceServerUpdate,
+		DeleteContext: resourceServerDelete,
+		Schema: map[string]*schema.Schema{
+			CredIDField: {
+				Type:        schema.TypeInt,
+				Required:    true,
+				Description: "Credentials ID.",
+			},
+			DescriptionField: {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Description of the server.",
+			},
+			EnabledField: {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "Enabled state of the server.",
+			},
+			GroupIDField: {
+				Type:        schema.TypeInt,
+				Required:    true,
+				Description: "Group ID.",
+			},
+			HostnameField: {
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: "Hostname of the server.",
+			},
+			IPField: {
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "IP address of the server.",
+			},
+			PortField: {
+				Type:        schema.TypeInt,
+				Required:    true,
+				Description: "Port number.",
+			},
+		},
+	}
+}
+
+func resourceServerCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := m.(*Config).Client
+
+	description := strings.ReplaceAll(d.Get(DescriptionField).(string), "'", "")
+	hostname := strings.ReplaceAll(d.Get(HostnameField).(string), "'", "")
+
+	server := map[string]interface{}{
+		CredIDField:      d.Get(CredIDField).(int),
+		DescriptionField: description,
+		EnabledField:     boolToInt(d.Get(EnabledField).(bool)),
+		GroupIDField:     d.Get(GroupIDField).(int),
+		HostnameField:    hostname,
+		IPField:          d.Get(IPField).(string),
+		PortField:        d.Get(PortField).(int),
+	}
+
+	resp, err := client.doRequest("POST", "/api/server", server)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(resp, &result); err != nil {
+		return diag.FromErr(err)
+	}
+
+	id, ok := result["id"].(float64)
+	if !ok {
+		return diag.Errorf("unable to find ID in response: %v", result)
+	}
+
+	d.SetId(fmt.Sprintf("%d", int(id)))
+	return resourceServerRead(ctx, d, m)
+}
+
+func resourceServerRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := m.(*Config).Client
+	id := d.Id()
+
+	resp, err := client.doRequest("GET", fmt.Sprintf("/api/server/%s", id), nil)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(resp, &result); err != nil {
+		return diag.FromErr(err)
+	}
+
+	d.Set(CredIDField, result[CredIDField])
+	description := strings.ReplaceAll(result[DescriptionField].(string), "'", "")
+	hostname := strings.ReplaceAll(result[HostnameField].(string), "'", "")
+	d.Set(DescriptionField, description)
+	d.Set(EnabledField, intToBool(result[EnabledField].(float64)))
+	d.Set(GroupIDField, result[GroupIDField])
+	d.Set(HostnameField, hostname)
+	d.Set(IPField, result[IPField])
+	d.Set(PortField, result[PortField])
+
+	return nil
+}
+
+func resourceServerUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := m.(*Config).Client
+	id := d.Id()
+
+	description := strings.ReplaceAll(d.Get(DescriptionField).(string), "'", "")
+	hostname := strings.ReplaceAll(d.Get(HostnameField).(string), "'", "")
+
+	server := map[string]interface{}{
+		CredIDField:      d.Get(CredIDField).(int),
+		DescriptionField: description,
+		EnabledField:     boolToInt(d.Get(EnabledField).(bool)),
+		GroupIDField:     d.Get(GroupIDField).(int),
+		HostnameField:    hostname,
+		IPField:          d.Get(IPField).(string),
+		PortField:        d.Get(PortField).(int),
+	}
+
+	_, err := client.doRequest("PUT", fmt.Sprintf("/api/server/%s", id), server)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	return resourceServerRead(ctx, d, m)
+}
+
+func resourceServerDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	client := m.(*Config).Client
+	id := d.Id()
+
+	_, err := client.doRequest("DELETE", fmt.Sprintf("/api/server/%s", id), nil)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	d.SetId("")
+	return nil
+}
+
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+func intToBool(i float64) bool {
+	return i == 1
+}
