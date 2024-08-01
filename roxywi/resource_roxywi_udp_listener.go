@@ -24,6 +24,7 @@ const (
 	PortField          = "port"
 	ServerIdField      = "server_id"
 	VIPField           = "vip"
+	ReconfigureField   = "reconfigure"
 )
 
 var validLbAlgorithms = []string{
@@ -159,6 +160,7 @@ func resourceUdpListenerCreate(ctx context.Context, d *schema.ResourceData, m in
 		PortField:        port,
 		ServerIdField:    serverID,
 		VIPField:         vip,
+		ReconfigureField: true,
 	}
 
 	resp, err := client.doRequest("POST", "/api/udp/listener", requestBody)
@@ -246,6 +248,10 @@ func resourceUdpListenerUpdate(ctx context.Context, d *schema.ResourceData, m in
 		PortField:        port,
 		ServerIdField:    serverID,
 		VIPField:         vip,
+	}
+
+	if d.HasChange(ConfigField) || d.HasChange(LbAlgorithmField) || d.HasChange(PortField) || d.HasChange(VIPField) {
+		requestBody[ReconfigureField] = true
 	}
 
 	_, err := client.doRequest("PUT", fmt.Sprintf("/api/udp/listener/%s", id), requestBody)

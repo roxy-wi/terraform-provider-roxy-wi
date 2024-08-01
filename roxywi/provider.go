@@ -47,6 +47,7 @@ func Provider() *schema.Provider {
 		DataSourcesMap: map[string]*schema.Resource{
 			"roxywi_group":        dataSourceGroup(),
 			"roxywi_udp_listener": dataSourceUdpListener(),
+			"roxywi_user_role":    dataSourceUserRole(),
 		},
 	}
 
