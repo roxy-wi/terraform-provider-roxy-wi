@@ -5,6 +5,6 @@ provider "roxywi" {
 }
 
 resource "roxywi_group" "example" {
-  name = "example_group2"
+  name        = "example_group2"
   description = "test terraform group2"
 }

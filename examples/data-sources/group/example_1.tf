@@ -18,6 +18,6 @@ data "roxywi_group" "example_name" {
   name = "test"
 }
 
-output data {
+output "data" {
   value = data.roxywi_group.example_name
 }

@@ -5,7 +5,7 @@ The Terraform Provider for Roxy-WI allows you to manage Roxy-WI resources such a
 
 ## Requirements
 
-- [Terraform](https://www.terraform.io/downloads.html) 0.12+
+- [Terraform](https://www.terraform.io/downloads.html) v1.7.0+
 - Go 1.22.5+ (to build the provider)
 
 ## Building The Provider

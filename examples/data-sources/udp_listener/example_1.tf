@@ -11,3 +11,13 @@ data "roxywi_udp_listener" "example" {
 output "test" {
   value = data.roxywi_udp_listener.example
 }
+
+// ------------------------------------
+
+data "roxywi_udp_listener" "example_name" {
+  name = "test"
+}
+
+output "data" {
+  value = data.roxywi_udp_listener.example_name
+}

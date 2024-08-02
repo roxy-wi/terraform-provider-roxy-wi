@@ -11,7 +11,7 @@ For example:
 
 ```console
 % git clone https://github.com/roxy-wi/terraform-provider-roxy-wi.git
-% cd terraform-provider-aws/examples/roxywi_group
+% cd terraform-provider-aws/examples/group
 % terraform apply
 ...
 ```
