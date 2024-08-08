@@ -27,8 +27,8 @@ resource "roxywi_user" "example" {
 }
 
 resource "roxywi_user_role_binding" "example" {
-  user_id = roxywi_user.example.id
-  role_id = 1
+  user_id  = roxywi_user.example.id
+  role_id  = 1
   group_id = 1
 }
 ```
