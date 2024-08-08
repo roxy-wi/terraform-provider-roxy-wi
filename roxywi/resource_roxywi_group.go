@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -12,11 +13,22 @@ import (
 
 func resourceGroup() *schema.Resource {
 	return &schema.Resource{
-		CreateContext: resourceGroupCreate,
-		ReadContext:   resourceGroupRead,
-		UpdateContext: resourceGroupUpdate,
-		DeleteContext: resourceGroupDelete,
-		Description:   "Represent roxy-wi group. All servers managed via Roxy-WI can be included in groups. A group is a user-defined pool of servers. It is up to you decide how you will group your servers. You can create groups because of their type, purpose, etc. By default, all your servers are included in the common group named Default. All other groups are created within this group.",
+		CreateWithoutTimeout: resourceGroupCreate,
+		ReadWithoutTimeout:   resourceGroupRead,
+		UpdateWithoutTimeout: resourceGroupUpdate,
+		DeleteWithoutTimeout: resourceGroupDelete,
+
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
+
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(30 * time.Minute),
+		},
+
+		Description: "Represent roxy-wi group. All servers managed via Roxy-WI can be included in groups. A group is a user-defined pool of servers. It is up to you decide how you will group your servers. You can create groups because of their type, purpose, etc. By default, all your servers are included in the common group named Default. All other groups are created within this group.",
 
 		Schema: map[string]*schema.Schema{
 			NameField: {

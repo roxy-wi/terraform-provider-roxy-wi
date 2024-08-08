@@ -6,22 +6,33 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 const (
-	UserIDField  = "user_id"
-	GroupIDField = "group_id"
+	UserIDField = "user_id"
 )
 
 func resourceUserRoleBinding() *schema.Resource {
 	return &schema.Resource{
-		CreateContext: resourceUserRoleBindingCreate,
-		ReadContext:   resourceUserRoleBindingRead,
-		UpdateContext: resourceUserRoleBindingUpdate,
-		DeleteContext: resourceUserRoleBindingDelete,
+		CreateWithoutTimeout: resourceUserRoleBindingCreate,
+		ReadWithoutTimeout:   resourceUserRoleBindingRead,
+		UpdateWithoutTimeout: resourceUserRoleBindingUpdate,
+		DeleteWithoutTimeout: resourceUserRoleBindingDelete,
+
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
+
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(30 * time.Minute),
+		},
+
 		Schema: map[string]*schema.Schema{
 			UserIDField: {
 				Type:        schema.TypeInt,

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -20,10 +21,21 @@ const (
 
 func resourceServer() *schema.Resource {
 	return &schema.Resource{
-		CreateContext: resourceServerCreate,
-		ReadContext:   resourceServerRead,
-		UpdateContext: resourceServerUpdate,
-		DeleteContext: resourceServerDelete,
+		CreateWithoutTimeout: resourceServerCreate,
+		ReadWithoutTimeout:   resourceServerRead,
+		UpdateWithoutTimeout: resourceServerUpdate,
+		DeleteWithoutTimeout: resourceServerDelete,
+
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
+
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(30 * time.Minute),
+		},
+
 		Schema: map[string]*schema.Schema{
 			CredIDField: {
 				Type:        schema.TypeInt,
@@ -163,15 +175,4 @@ func resourceServerDelete(ctx context.Context, d *schema.ResourceData, m interfa
 
 	d.SetId("")
 	return nil
-}
-
-func boolToInt(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
-}
-
-func intToBool(i float64) bool {
-	return i == 1
 }

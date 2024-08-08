@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"net/http"
-	"net/mail"
+	"time"
 )
 
 const (
@@ -19,10 +18,21 @@ const (
 
 func resourceUser() *schema.Resource {
 	return &schema.Resource{
-		CreateContext: resourceUserCreate,
-		ReadContext:   resourceUserRead,
-		UpdateContext: resourceUserUpdate,
-		DeleteContext: resourceUserDelete,
+		CreateWithoutTimeout: resourceUserCreate,
+		ReadWithoutTimeout:   resourceUserRead,
+		UpdateWithoutTimeout: resourceUserUpdate,
+		DeleteWithoutTimeout: resourceUserDelete,
+
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
+
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(30 * time.Minute),
+		},
+
 		Schema: map[string]*schema.Schema{
 			UserEmailField: {
 				Type:         schema.TypeString,
@@ -75,7 +85,6 @@ func resourceUserCreate(ctx context.Context, d *schema.ResourceData, m interface
 		return diag.Errorf("unable to extract user ID from response: %v", result)
 	}
 
-	// Handle both string and numeric ID
 	switch v := id.(type) {
 	case string:
 		d.SetId(v)
@@ -147,44 +156,4 @@ func resourceUserDelete(ctx context.Context, d *schema.ResourceData, m interface
 
 	d.SetId("")
 	return nil
-}
-
-// Utility function to check if the error is a 404 not found error
-func isNotFound(err error) bool {
-	if httpErr, ok := err.(*httpError); ok {
-		return httpErr.StatusCode == http.StatusNotFound
-	}
-	return false
-}
-
-// Define the HTTPError struct and methods
-type httpError struct {
-	StatusCode int
-	Err        error
-}
-
-func (e *httpError) Error() string {
-	return e.Err.Error()
-}
-
-// Utility function to convert bool to int
-func boolToInt(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
-}
-
-// Utility function to convert int to bool
-func intToBool(i float64) bool {
-	return i == 1
-}
-
-// Utility function to validate email format
-func validateEmail(val interface{}, key string) (warns []string, errs []error) {
-	_, err := mail.ParseAddress(val.(string))
-	if err != nil {
-		errs = append(errs, fmt.Errorf("%q must be a valid email address: %v", key, err))
-	}
-	return
 }
