@@ -33,6 +33,8 @@ func resourceUserRoleBinding() *schema.Resource {
 			Delete: schema.DefaultTimeout(30 * time.Minute),
 		},
 
+		Description: "The resource manages the binding of a user to a specific role within a group in Roxy-WI. This resource allows you to assign roles to users, facilitating role-based access control and management.",
+
 		Schema: map[string]*schema.Schema{
 			UserIDField: {
 				Type:        schema.TypeInt,

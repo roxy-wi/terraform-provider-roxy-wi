@@ -3,9 +3,6 @@ package roxywi
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/go-cty/cty"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"log"
 	"strings"
 )
@@ -71,38 +68,6 @@ func intFromInterface(value interface{}) int {
 	}
 }
 
-func validateLbAlgorithm() schema.SchemaValidateDiagFunc {
-	return func(i interface{}, path cty.Path) diag.Diagnostics {
-		v, ok := i.(string)
-		if !ok {
-			return diag.Errorf("expected type of %s to be string", path)
-		}
-
-		for _, str := range validLbAlgorithms {
-			if v == str {
-				return nil
-			}
-		}
-
-		return diag.Errorf("invalid value for %s: %s. Valid values are: %v", path, v, validLbAlgorithms)
-	}
-}
-
-func validateVip() schema.SchemaValidateDiagFunc {
-	return func(i interface{}, path cty.Path) diag.Diagnostics {
-		vip, ok := i.(string)
-		if !ok {
-			return diag.Errorf("expected type of %s to be string", path)
-		}
-
-		if vip == "" {
-			return diag.Errorf("VIP cannot be empty")
-		}
-
-		return nil
-	}
-}
-
 func checkVipExists(client *Client, clusterID, serverID int, vip string) error {
 	var url string
 	if clusterID != 0 {
@@ -148,5 +113,5 @@ func checkVipExists(client *Client, clusterID, serverID int, vip string) error {
 		}
 	}
 
-	return fmt.Errorf("VIP %s not found", vip)
+	return fmt.Errorf("IP %s not found on the server, please change field VIP", vip)
 }

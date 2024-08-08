@@ -19,6 +19,9 @@ const (
 func dataSourceUserRole() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: dataSourceUserRoleRead,
+
+		Description: "The data source allows you to retrieve information about user roles in Roxy-WI. This data source fetches a list of roles, providing details about each role's ID, name, and description.",
+
 		Schema: map[string]*schema.Schema{
 			RolesField: {
 				Type:        schema.TypeList,

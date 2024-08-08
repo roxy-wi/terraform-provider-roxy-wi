@@ -10,16 +10,16 @@ resource "roxywi_udp_listener" "example" {
     port       = 9997
     weight     = 50
   }
-  сonfig {
+  config {
     backend_ip = "192.168.2.100"
     port       = 443
     weight     = 50
   }
   description = "Example UDP listener"
-  group_id    = 2
+  group_id    = 1
   lb_algo     = "rr"
   name        = "example listener"
   port        = 1234
   server_id   = 1
-  vip         = "192.168.1.100"
+  vip         = "10.0.0.127"
 }

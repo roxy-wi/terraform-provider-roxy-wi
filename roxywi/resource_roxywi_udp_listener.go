@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/go-cty/cty"
 	"strings"
 	"time"
 
@@ -12,28 +13,25 @@ import (
 )
 
 const (
-	ClusterIdField     = "cluster_id"
-	ConfigField        = "config"
-	BackendIPField     = "backend_ip"
-	BackendPortField   = "port"
-	BackendWeightField = "weight"
-	GroupIdField       = "group_id"
-	LbAlgorithmField   = "lb_algo"
-	PortField          = "port"
-	ServerIdField      = "server_id"
-	VIPField           = "vip"
-	ReconfigureField   = "reconfigure"
+	ClusterIdField                    = "cluster_id"
+	ConfigField                       = "config"
+	BackendIPField                    = "backend_ip"
+	BackendPortField                  = "port"
+	BackendWeightField                = "weight"
+	GroupIdField                      = "group_id"
+	LbAlgorithmField                  = "lb_algo"
+	PortField                         = "port"
+	ServerIdField                     = "server_id"
+	VIPField                          = "vip"
+	ReconfigureField                  = "reconfigure"
+	LbAlgorithmRoundRobin             = "rr"
+	LbAlgorithmWeightRoundRobin       = "wrr"
+	LbAlgorithmLeastConn              = "lc"
+	LbAlgorithmWeightLeastConn        = "wlc"
+	LbAlgorithmSourceHash             = "sh"
+	LbAlgorithmDestinationHash        = "dh"
+	LbAlgorithmLocalityBasedLeastConn = "lblc"
 )
-
-var validLbAlgorithms = []string{
-	"rr",
-	"wrr",
-	"lc",
-	"wlc",
-	"sh",
-	"dh",
-	"lblc",
-}
 
 func resourceUdpListener() *schema.Resource {
 	return &schema.Resource{
@@ -60,7 +58,7 @@ func resourceUdpListener() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				ExactlyOneOf: []string{ClusterIdField, ServerIdField},
-				Description:  "ID of the cluster.",
+				Description:  fmt.Sprintf("Cluster ID where the UDP listener is located. Must be determined if `%s` empty.", ServerIdField),
 			},
 			ConfigField: {
 				Type:        schema.TypeList,
@@ -76,12 +74,12 @@ func resourceUdpListener() *schema.Resource {
 						BackendPortField: {
 							Type:        schema.TypeInt,
 							Required:    true,
-							Description: "Port of the backend server.",
+							Description: "Port number on which the backend server listens for requests.",
 						},
 						BackendWeightField: {
 							Type:        schema.TypeInt,
 							Required:    true,
-							Description: "Weight of the backend server.",
+							Description: "Weight assigned to the backend server.",
 						},
 					},
 				},
@@ -97,10 +95,22 @@ func resourceUdpListener() *schema.Resource {
 				Description: "ID of the group.",
 			},
 			LbAlgorithmField: {
-				Type:             schema.TypeString,
-				Required:         true,
-				Description:      fmt.Sprintf("Load balancing algorithm. Available values are: %v", validLbAlgorithms),
-				ValidateDiagFunc: validateLbAlgorithm(),
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: fmt.Sprintf("Load balancing algorithm. Available values are: `%s`,`%s`,`%s`,`%s`,`%s`,`%s`,`%s`.", LbAlgorithmRoundRobin, LbAlgorithmWeightRoundRobin, LbAlgorithmLeastConn, LbAlgorithmWeightLeastConn, LbAlgorithmSourceHash, LbAlgorithmDestinationHash, LbAlgorithmLocalityBasedLeastConn),
+				ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
+					v, ok := i.(string)
+					if !ok {
+						return diag.Errorf("Invalid type for %s: expected string", path)
+					}
+					algorithms := []string{LbAlgorithmRoundRobin, LbAlgorithmWeightRoundRobin, LbAlgorithmLeastConn, LbAlgorithmWeightLeastConn, LbAlgorithmSourceHash, LbAlgorithmDestinationHash, LbAlgorithmLocalityBasedLeastConn}
+					for _, alg := range algorithms {
+						if v == alg {
+							return nil
+						}
+					}
+					return diag.Errorf("Invalid value for %s: %s. Valid values are: %s", path, v, strings.Join(algorithms, ", "))
+				},
 			},
 			NameField: {
 				Type:        schema.TypeString,
@@ -117,13 +127,24 @@ func resourceUdpListener() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				ExactlyOneOf: []string{ClusterIdField, ServerIdField},
-				Description:  "ID of the server.",
+				Description:  fmt.Sprintf("Server ID where the UDP listener is located. Must be determined if `%s` empty", ClusterIdField),
 			},
 			VIPField: {
-				Type:             schema.TypeString,
-				Required:         true,
-				Description:      "Virtual IP address.",
-				ValidateDiagFunc: validateVip(),
+				Type:        schema.TypeString,
+				Required:    true,
+				Description: fmt.Sprintf("IP address of the UDP listener binding, if `%s` specified. VIP address of the UDP listener binding, if `%s` specified. Must be a valid IPv4 and exists.", ServerIdField, ClusterIdField),
+				ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
+					vip, ok := i.(string)
+					if !ok {
+						return diag.Errorf("expected type of %s to be string", path)
+					}
+
+					if vip == "" {
+						return diag.Errorf("VIP cannot be empty")
+					}
+
+					return nil
+				},
 			},
 		},
 	}

@@ -36,6 +36,8 @@ func resourceServer() *schema.Resource {
 			Delete: schema.DefaultTimeout(30 * time.Minute),
 		},
 
+		Description: "This resource manages server entries in Roxy-WI. It allows you to define servers with specific credentials, group associations, IP addresses, and other configurations.",
+
 		Schema: map[string]*schema.Schema{
 			CredIDField: {
 				Type:        schema.TypeInt,

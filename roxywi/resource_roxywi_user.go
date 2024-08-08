@@ -33,6 +33,8 @@ func resourceUser() *schema.Resource {
 			Delete: schema.DefaultTimeout(30 * time.Minute),
 		},
 
+		Description: "This resource manages user entries in Roxy-WI. It allows you to define users with specific email addresses, usernames, passwords, and enabled statuses.",
+
 		Schema: map[string]*schema.Schema{
 			UserEmailField: {
 				Type:         schema.TypeString,
