@@ -5,4 +5,8 @@ docs_fmt:
 docs: docs_fmt
 	go get github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@v0.19.4
 	go mod tidy
-	tfplugindocs --tf-version=1.7.0 --provider-name=roxywi
+	make docs_fmt
+	tfplugindocs generate --tf-version=1.7.0 --provider-name=roxywi
+
+build:
+	go build -o bin/terraform-provider-roxywi
