@@ -1,0 +1,1 @@
+% terraform import roxywi_ssh_credential.example 1

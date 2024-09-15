@@ -47,8 +47,7 @@ func Provider() *schema.Provider {
 			"roxywi_user_role_binding": resourceUserRoleBinding(),
 			"roxywi_server":            resourceServer(),
 			"roxywi_channel":           resourceChannel(),
-			"roxywi_backup":            resourceBackup(),
-			"roxywi_service_config":    resourceServiceConfig(),
+			"roxywi_ssh_credential":    resourceSSHCredential(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"roxywi_group":        dataSourceGroup(),
