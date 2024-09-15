@@ -37,39 +37,7 @@ provider "roxywi" {
   login    = "your-login"
   password = "your-password"
 }
-
-resource "roxywi_udp_listener" "example" {
-  cluster_id   = 1
-  name         = "example_listener"
-  port         = 9997
-  vip          = "192.168.1.1"
-  lb_algo      = "rr"
-  config {
-      backend_ip = "192.168.1.100"
-      port       = 443
-      weight     = 50
-  }
-  config {
-      backend_ip = "192.168.1.101"
-      port       = 443
-      weight     = 50
-  }
-}
-
-data "roxywi_udp_listener" "example" {
-  id = roxywi_udp_listener.example.id
-}
 ```
-
-## Resources
-
-### `roxywi_udp_listener`
-
-A resource for managing UDP listeners.
-
-### `roxywi_group`
-
-A resource for managing groups.
 
 
 ## License
