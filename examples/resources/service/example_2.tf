@@ -1,4 +1,4 @@
 import {
   to = roxywi_service_installation.example
-  id = "1"
+  id = "1-haproxy"
 }
