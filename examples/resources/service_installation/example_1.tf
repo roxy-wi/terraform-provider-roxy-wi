@@ -8,7 +8,7 @@ resource "roxywi_service_installation" "example" {
   service   = "haproxy"
   server_id = 123
 
-  auto_start = е
+  auto_start = 1
   checker    = 1
   metrics    = 1
   syn_flood  = 0
