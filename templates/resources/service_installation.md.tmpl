@@ -12,28 +12,7 @@ Manages service installation and Tools settings.
 
 ## Example Usage
 
-```terraform
-provider "roxywi" {
-  base_url = "https://..."
-  login    = "test"
-  password = "testpass"
-}
-
-resource "roxywi_service_installation" "example" {
-  service   = "haproxy"
-  server_id = 123
-
-  auto_start = true
-  checker    = true
-  metrics    = true
-  syn_flood  = false
-  docker     = false
-}
-
-output "service_installation_id" {
-  value = roxywi_service_installation.example.id
-}
-```
+{{ tffile "./examples/resources/service_installation/example_1.tf" }}
 
 ## Argument Reference
 
@@ -68,15 +47,8 @@ Optional:
 
 In Terraform v1.7.0 and later, use an import block to import Service installation. For example:
 
-```terraform
-import {
-  to = roxywi_service_installation.example
-  id = "1-haproxy"
-}
-```
+{{tffile "./examples/resources/service_installation/example_2.tf"}}
 
 Using terraform import, import Service installation can be imported using the `id`, e.g. For example:
 
-```shell
-% terraform import roxywi_service_installation.example 1-haproxy
-```
+{{codefile "shell" "./examples/resources/service_installation/import.sh"}}

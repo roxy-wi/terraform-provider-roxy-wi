@@ -8,11 +8,11 @@ resource "roxywi_service_installation" "example" {
   service   = "haproxy"
   server_id = 123
 
-  auto_start = 1
-  checker    = 1
-  metrics    = 1
-  syn_flood  = 0
-  docker     = 0
+  auto_start = true
+  checker    = true
+  metrics    = true
+  syn_flood  = false
+  docker     = false
 }
 
 output "service_installation_id" {

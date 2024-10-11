@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -12,13 +13,11 @@ import (
 )
 
 const (
-	S3Server           = "s3_server"
-	AccessKey          = "access_key"
-	SecretKey          = "secret_key"
-	Bucket             = "bucket"
-	ServerIdS3Field    = "server_id"
-	TimeS3Field        = "time"
-	DescriptionS3Field = "description"
+	S3Server    = "s3_server"
+	AccessKey   = "access_key"
+	SecretKey   = "secret_key"
+	Bucket      = "bucket"
+	TimeS3Field = "time"
 )
 
 func resourceBackupS3() *schema.Resource {
@@ -38,7 +37,7 @@ func resourceBackupS3() *schema.Resource {
 			Delete: schema.DefaultTimeout(30 * time.Minute),
 		},
 
-		Description: "",
+		Description: "Manage creating backup to S3.",
 
 		Schema: map[string]*schema.Schema{
 			S3Server: {
@@ -71,7 +70,7 @@ func resourceBackupS3() *schema.Resource {
 				Required:    true,
 				Description: "Time for the backup. Could be: dayli, weekly, monthly",
 			},
-			ServerIdS3Field: {
+			ServerField: {
 				Type:        schema.TypeInt,
 				Required:    true,
 				Description: "Server ID for backup",
@@ -88,19 +87,19 @@ func resourceBackupS3Create(ctx context.Context, d *schema.ResourceData, m inter
 	accessKey := d.Get(AccessKey).(string)
 	secretKey := d.Get(SecretKey).(string)
 	bucket := d.Get(Bucket).(string)
-	serverID := d.Get(ServerIdS3Field).(int)
+	serverID := d.Get(ServerField).(int)
 	backupTime := d.Get(TimeS3Field).(string)
-	description := d.Get(DescriptionS3Field).(string)
+	description := strings.ReplaceAll(d.Get(DescriptionField).(string), "'", "")
 
 	// Создаём резервные копии S3 на основе данных схемы
 	backup := map[string]interface{}{
-		S3Server:           s3Server,
-		AccessKey:          accessKey,
-		SecretKey:          secretKey,
-		Bucket:             bucket,
-		ServerIdS3Field:    serverID,
-		TimeS3Field:        backupTime,
-		DescriptionS3Field: description,
+		S3Server:         s3Server,
+		AccessKey:        accessKey,
+		SecretKey:        secretKey,
+		Bucket:           bucket,
+		ServerField:      serverID,
+		TimeS3Field:      backupTime,
+		DescriptionField: description,
 	}
 
 	resp, err := client.doRequest("POST", "/api/server/backup/s3", backup)
@@ -152,14 +151,16 @@ func resourceBackupS3Read(ctx context.Context, d *schema.ResourceData, m interfa
 		return diag.FromErr(err)
 	}
 
+	description := strings.ReplaceAll(result[DescriptionField].(string), "'", "")
+
 	d.Set(S3Server, result[S3Server])
-	d.Set(DescriptionS3Field, result[DescriptionS3Field])
+	d.Set(DescriptionField, description)
 	d.Set(AccessKey, result[AccessKey])
 	d.Set(SecretKey, result[SecretKey])
 	d.Set(Bucket, result[Bucket])
-	d.Set(ServerIdS3Field, result[ServerIdS3Field])
+	d.Set(ServerField, result[ServerField])
 	d.Set(TimeField, result[TimeField])
-	d.Set(DescriptionS3Field, result[DescriptionS3Field])
+	d.Set(DescriptionField, result[DescriptionField])
 
 	return nil
 }
@@ -167,15 +168,16 @@ func resourceBackupS3Read(ctx context.Context, d *schema.ResourceData, m interfa
 func resourceBackupS3Update(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
 	id := d.Id()
+	description := strings.ReplaceAll(d.Get(DescriptionField).(string), "'", "")
 
 	backup := map[string]interface{}{
-		S3Server:           d.Get(S3Server).(string),
-		DescriptionS3Field: d.Get(DescriptionS3Field).(string),
-		AccessKey:          d.Get(AccessKey).(string),
-		SecretKey:          d.Get(SecretKey).(string),
-		Bucket:             d.Get(Bucket).(string),
-		ServerIdS3Field:    d.Get(ServerIdS3Field).(int),
-		TimeField:          d.Get(TimeField).(string),
+		S3Server:         d.Get(S3Server).(string),
+		DescriptionField: description,
+		AccessKey:        d.Get(AccessKey).(string),
+		SecretKey:        d.Get(SecretKey).(string),
+		Bucket:           d.Get(Bucket).(string),
+		ServerField:      d.Get(ServerField).(int),
+		TimeField:        d.Get(TimeField).(string),
 	}
 
 	_, err := client.doRequest("PUT", fmt.Sprintf("/api/server/backup/s3/%s", id), backup)
@@ -192,8 +194,8 @@ func resourceBackupS3Delete(ctx context.Context, d *schema.ResourceData, m inter
 
 	// Подготовка данных для удаления
 	deleteData := map[string]interface{}{
-		Bucket:          d.Get(Bucket).(int),
-		ServerIdS3Field: d.Get(ServerIdS3Field).(int),
+		Bucket:      d.Get(Bucket).(int),
+		ServerField: d.Get(ServerField).(int),
 	}
 
 	_, err := client.doRequest("DELETE", fmt.Sprintf("/api/server/backup/s3/%s", id), deleteData)

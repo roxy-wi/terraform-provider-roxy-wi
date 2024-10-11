@@ -14,7 +14,7 @@ Represents a communication channel such as Telegram, Slack, PagerDuty, or Matter
 
 ```terraform
 provider "roxywi" {
-  base_url = "https://demo.roxy-wi.org"
+  base_url = "https://..."
   login    = "testlog"
   password = "testpass"
 }

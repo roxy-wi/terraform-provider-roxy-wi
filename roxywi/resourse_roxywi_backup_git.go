@@ -13,19 +13,17 @@ import (
 )
 
 const (
-	RPathField   = "rpath"
-	RServerField = "rserver"
-	ServerField  = "server_id"
-	TimeField    = "time"
-	TypeField    = "type"
+	BranchField    = "branch"
+	RepoField      = "repo"
+	ServiceIdField = "service_id"
 )
 
-func resourceBackupFs() *schema.Resource {
+func resourceBackupGit() *schema.Resource {
 	return &schema.Resource{
-		CreateWithoutTimeout: resourceBackupFsCreate,
-		ReadWithoutTimeout:   resourceBackupFsRead,
-		UpdateWithoutTimeout: resourceBackupFsUpdate,
-		DeleteWithoutTimeout: resourceBackupFsDelete,
+		CreateWithoutTimeout: resourceBackupGitCreate,
+		ReadWithoutTimeout:   resourceBackupGitRead,
+		UpdateWithoutTimeout: resourceBackupGitUpdate,
+		DeleteWithoutTimeout: resourceBackupGitDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -37,7 +35,7 @@ func resourceBackupFs() *schema.Resource {
 			Delete: schema.DefaultTimeout(30 * time.Minute),
 		},
 
-		Description: "Manage backups to remote File system",
+		Description: "Manage Git backups",
 
 		Schema: map[string]*schema.Schema{
 			CredIDField: {
@@ -50,50 +48,50 @@ func resourceBackupFs() *schema.Resource {
 				Optional:    true,
 				Description: "Description of the backup.",
 			},
-			RPathField: {
+			BranchField: {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "Remote path for the backup.",
+				Description: "Git branch to push.",
 			},
-			RServerField: {
+			RepoField: {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "Remote server for the backup.",
+				Description: "Git repository to push.",
 			},
 			ServerField: {
 				Type:        schema.TypeInt,
 				Required:    true,
 				Description: "Server ID for the backup.",
 			},
-			TimeField: {
+			TimeS3Field: {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "Time for the backup. Could be: dayli, weekly, monthly",
+				Description: "Time for the backup. Could be: dayli, weekly, monthly.",
 			},
-			TypeField: {
-				Type:        schema.TypeString,
+			ServiceIdField: {
+				Type:        schema.TypeInt,
 				Required:    true,
-				Description: "Type of the backup. Could be: backup, synchronization",
+				Description: "Service ID: 1: HAProxy, 2: NGINX, 3: Keepalived, 4: Apache.",
 			},
 		},
 	}
 }
 
-func resourceBackupFsCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceBackupGitCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
 	description := strings.ReplaceAll(d.Get(DescriptionField).(string), "'", "")
 
 	backup := map[string]interface{}{
 		CredIDField:      d.Get(CredIDField).(int),
 		DescriptionField: description,
-		RPathField:       d.Get(RPathField).(string),
-		RServerField:     d.Get(RServerField).(string),
+		BranchField:      d.Get(BranchField).(string),
+		TimeS3Field:      d.Get(TimeS3Field).(string),
+		ServiceIdField:   d.Get(ServiceIdField).(int),
 		ServerField:      d.Get(ServerField).(int),
-		TimeField:        d.Get(TimeField).(string),
-		TypeField:        d.Get(TypeField).(string),
+		RepoField:        d.Get(RepoField).(string),
 	}
 
-	resp, err := client.doRequest("POST", "/api/server/backup/fs", backup)
+	resp, err := client.doRequest("POST", "/api/server/backup/git", backup)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -125,14 +123,14 @@ func resourceBackupFsCreate(ctx context.Context, d *schema.ResourceData, m inter
 	}
 
 	d.SetId(idStr)
-	return resourceBackupFsRead(ctx, d, m)
+	return resourceBackupGitRead(ctx, d, m)
 }
 
-func resourceBackupFsRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceBackupGitRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
 	id := d.Id()
 
-	resp, err := client.doRequest("GET", fmt.Sprintf("/api/server/backup/fs/%s", id), nil)
+	resp, err := client.doRequest("GET", fmt.Sprintf("/api/server/backup/git/%s", id), nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -146,16 +144,16 @@ func resourceBackupFsRead(ctx context.Context, d *schema.ResourceData, m interfa
 
 	d.Set(CredIDField, result[CredIDField])
 	d.Set(DescriptionField, description)
-	d.Set(RPathField, result[RPathField])
-	d.Set(RServerField, result[RServerField])
+	d.Set(BranchField, result[BranchField])
+	d.Set(TimeS3Field, result[TimeS3Field])
 	d.Set(ServerField, result[ServerField])
-	d.Set(TimeField, result[TimeField])
-	d.Set(TypeField, result[TypeField])
+	d.Set(ServiceIdField, result[ServiceIdField])
+	d.Set(RepoField, result[RepoField])
 
 	return nil
 }
 
-func resourceBackupFsUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceBackupGitUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
 	id := d.Id()
 	description := strings.ReplaceAll(d.Get(DescriptionField).(string), "'", "")
@@ -163,22 +161,22 @@ func resourceBackupFsUpdate(ctx context.Context, d *schema.ResourceData, m inter
 	backup := map[string]interface{}{
 		CredIDField:      d.Get(CredIDField).(int),
 		DescriptionField: description,
-		RPathField:       d.Get(RPathField).(string),
-		RServerField:     d.Get(RServerField).(string),
+		BranchField:      d.Get(BranchField).(string),
+		TimeS3Field:      d.Get(TimeS3Field).(string),
+		ServiceIdField:   d.Get(ServiceIdField).(int),
 		ServerField:      d.Get(ServerField).(int),
-		TimeField:        d.Get(TimeField).(string),
-		TypeField:        d.Get(TypeField).(string),
+		RepoField:        d.Get(RepoField).(string),
 	}
 
-	_, err := client.doRequest("PUT", fmt.Sprintf("/api/server/backup/fs/%s", id), backup)
+	_, err := client.doRequest("PUT", fmt.Sprintf("/api/server/backup/git/%s", id), backup)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	return resourceBackupFsRead(ctx, d, m)
+	return resourceBackupGitRead(ctx, d, m)
 }
 
-func resourceBackupFsDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceBackupGitDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
 	id := d.Id()
 
@@ -188,7 +186,7 @@ func resourceBackupFsDelete(ctx context.Context, d *schema.ResourceData, m inter
 		CredIDField: d.Get(CredIDField).(int),
 	}
 
-	_, err := client.doRequest("DELETE", fmt.Sprintf("/api/server/backup/fs/%s", id), deleteData)
+	_, err := client.doRequest("DELETE", fmt.Sprintf("/api/server/backup/git/%s", id), deleteData)
 	if err != nil {
 		return diag.FromErr(err)
 	}

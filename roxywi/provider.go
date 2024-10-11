@@ -51,6 +51,7 @@ func Provider() *schema.Provider {
 			"roxywi_service_installation": resourceServiceInstallation(),
 			"roxywi_backup_fs":            resourceBackupFs(),
 			"roxywi_backup_s3":            resourceBackupS3(),
+			"roxywi_backup_git":           resourceBackupGit(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"roxywi_group":        dataSourceGroup(),

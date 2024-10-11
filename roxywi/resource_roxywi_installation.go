@@ -16,9 +16,8 @@ const (
 	AutoStart = "auto_start"
 	Checker   = "checker"
 	Metrics   = "metrics"
-	SynFlood  = "syn_flood"
-	Servers   = "servers"
-	Services  = "services"
+	Docker    = "docker"
+	Service   = "service"
 )
 
 func resourceServiceInstallation() *schema.Resource {
@@ -54,33 +53,27 @@ func resourceServiceInstallation() *schema.Resource {
 				ForceNew:    true,
 			},
 			"auto_start": {
-				Type:        schema.TypeInt,
+				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     0,
+				Default:     false,
 				Description: "Is Auto start tool enabled for this service.",
 			},
 			"checker": {
-				Type:        schema.TypeInt,
+				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     0,
+				Default:     false,
 				Description: "Is Checker tool enabled for this service.",
 			},
 			"metrics": {
-				Type:        schema.TypeInt,
+				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     0,
+				Default:     false,
 				Description: "Is Metrics tool enabled for this service.",
 			},
-			"syn_flood": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Default:     0,
-				Description: "SYN flood setting.",
-			},
 			"docker": {
-				Type:        schema.TypeInt,
+				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     0,
+				Default:     false,
 				Description: "Is this service should be run in Docker container.",
 			},
 		},
@@ -100,17 +93,15 @@ func resourceServiceInstallationCreate(ctx context.Context, d *schema.ResourceDa
 		return diag.Errorf("server_id is required and must be an int")
 	}
 
-	autoStart := d.Get("auto_start").(int)
-	checker := d.Get("checker").(int)
-	metrics := d.Get("metrics").(int)
-	synFlood := d.Get("syn_flood").(int)
-	docker := d.Get("docker").(int)
+	autoStart := boolToInt(d.Get("auto_start").(bool))
+	checker := boolToInt(d.Get("checker").(bool))
+	metrics := boolToInt(d.Get("metrics").(bool))
+	docker := boolToInt(d.Get("docker").(bool))
 
 	payload := map[string]interface{}{
 		"auto_start": autoStart,
 		"checker":    checker,
 		"metrics":    metrics,
-		"syn_flood":  synFlood,
 		"docker":     docker,
 	}
 
@@ -147,17 +138,15 @@ func resourceServiceInstallationUpdate(ctx context.Context, d *schema.ResourceDa
 		return diag.Errorf("server_id is required and must be an int")
 	}
 
-	autoStart := d.Get("auto_start").(int)
-	checker := d.Get("checker").(int)
-	metrics := d.Get("metrics").(int)
-	synFlood := d.Get("syn_flood").(int)
-	docker := d.Get("docker").(int)
+	autoStart := boolToInt(d.Get("auto_start").(bool))
+	checker := boolToInt(d.Get("checker").(bool))
+	metrics := boolToInt(d.Get("metrics").(bool))
+	docker := boolToInt(d.Get("docker").(bool))
 
 	payload := map[string]interface{}{
 		"auto_start": autoStart,
 		"checker":    checker,
 		"metrics":    metrics,
-		"syn_flood":  synFlood,
 		"docker":     docker,
 	}
 
@@ -193,10 +182,7 @@ func resourceServiceInstallationRead(ctx context.Context, d *schema.ResourceData
 
 	// Используем первую часть как идентификатор ресурса
 	id := parts[0]
-	service, ok := d.Get("service").(string)
-	if !ok || service == "" {
-		return diag.Errorf("service must be set and must be a string")
-	}
+	service := parts[1]
 
 	url := fmt.Sprintf("/api/service/%s/%s/install", service, id)
 	resp, err := client.doRequest(http.MethodGet, url, nil)
@@ -210,21 +196,12 @@ func resourceServiceInstallationRead(ctx context.Context, d *schema.ResourceData
 	}
 
 	// Extracting the data and ensuring they are set correctly
-	if autoStart, ok := result["auto_start"].(int); ok {
-		d.Set("auto_start", autoStart)
-	}
-	if checker, ok := result["checker"].(int); ok {
-		d.Set("checker", checker)
-	}
-	if metrics, ok := result["metrics"].(int); ok {
-		d.Set("metrics", metrics)
-	}
-	if synFlood, ok := result["syn_flood"].(int); ok {
-		d.Set("syn_flood", synFlood)
-	}
-	if docker, ok := result["docker"].(int); ok {
-		d.Set("docker", docker)
-	}
+	d.Set(AutoStart, intToBool(result[AutoStart].(float64)))
+	d.Set(Checker, intToBool(result[Checker].(float64)))
+	d.Set(Metrics, intToBool(result[Metrics].(float64)))
+	d.Set(Docker, intToBool(result[Docker].(float64)))
+	d.Set(ServerField, result[ServerField].(float64))
+	d.Set(Service, result[Service].(string))
 
 	return nil
 }
