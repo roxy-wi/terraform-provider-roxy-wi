@@ -1,5 +1,5 @@
 provider "roxywi" {
-  base_url = "https://demo.roxy-wi.org"
+  base_url = "https://..."
   login    = "your_login"
   password = "your_password"
 }
