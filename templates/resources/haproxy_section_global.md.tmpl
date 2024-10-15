@@ -25,14 +25,12 @@ Manage HAProxy Global sections. Since this section exists by default and cannot 
 ### Optional
 
 - `action` (String) What action should be taken after changing the config. Available: save, reload, restart.
-- `chroot` (String) HAProxy is designed to isolate itself into a chroot jail during startup, where
-it cannot perform any file-system access at all.
+- `chroot` (String) HAProxy is designed to isolate itself into a chroot jail during startup, where it cannot perform any file-system access at all.
 - `daemon` (Boolean) Start as a daemon. The process detaches from the current terminal after forking, and errors are not reported anymore in the terminal.
 - `group` (String) A group with what HAProxy will be started.
 - `log` (List of String) A list loging settings.
 - `maxconn` (Number) Limits the per-process connection limit.
-- `option` (String) Here you can put addinional options separeted by '
-'.
+- `option` (String) Here you can put addinional options separeted by '\\n'.
 - `pidfile` (String) Path to the pid file.
 - `socket` (List of String) A list socket settings.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
