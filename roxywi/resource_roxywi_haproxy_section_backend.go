@@ -12,12 +12,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceHaproxySectionListen() *schema.Resource {
+func resourceHaproxySectionBackend() *schema.Resource {
 	return &schema.Resource{
-		CreateWithoutTimeout: resourceHaproxySectionListenCreate,
-		ReadWithoutTimeout:   resourceHaproxySectionListenRead,
-		UpdateWithoutTimeout: resourceHaproxySectionListenUpdate,
-		DeleteWithoutTimeout: resourceHaproxySectionListenDelete,
+		CreateWithoutTimeout: resourceHaproxySectionBackendCreate,
+		ReadWithoutTimeout:   resourceHaproxySectionBackendRead,
+		UpdateWithoutTimeout: resourceHaproxySectionBackendUpdate,
+		DeleteWithoutTimeout: resourceHaproxySectionBackendDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -29,14 +29,14 @@ func resourceHaproxySectionListen() *schema.Resource {
 			Delete: schema.DefaultTimeout(30 * time.Minute),
 		},
 
-		Description: "Manage HAProxy Listen sections. Please note that changes may cause HAProxy to restart.",
+		Description: "Manage HAProxy Backend sections. Please note that changes may cause HAProxy to restart.",
 
 		Schema: map[string]*schema.Schema{
 			NameField: {
 				Type:        schema.TypeString,
 				Required:    true,
 				ForceNew:    true,
-				Description: "Name of the Listen section.",
+				Description: "Name of the Backend section.",
 			},
 			AclsField: {
 				Type:        schema.TypeList,
@@ -81,25 +81,11 @@ func resourceHaproxySectionListen() *schema.Resource {
 					ModeHTTP,
 				}, false),
 			},
-			BindsField: {
-				Type:        schema.TypeList,
-				Required:    true,
-				Description: "List of backend servers configuration.",
-				Elem: &schema.Resource{
-					Schema: bindSchema(),
-				},
-			},
 			ServerIdField: {
 				Type:        schema.TypeInt,
 				Required:    true,
 				ForceNew:    true,
 				Description: "The ID of the server to deploy to.",
-			},
-			MaxconnFiled: {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Default:     2000,
-				Description: "Limits the per-process connection limit.",
 			},
 			ActionField: {
 				Type:        schema.TypeString,
@@ -112,27 +98,11 @@ func resourceHaproxySectionListen() *schema.Resource {
 					"restart",
 				}, false),
 			},
-			BlacklistField: {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "Path to a blacklist.",
-			},
-			WhitelistField: {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "Path to a whitelist.",
-			},
 			CacheField: {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     false,
 				Description: "Cache enabling.",
-			},
-			SlowAttackField: {
-				Type:        schema.TypeBool,
-				Optional:    true,
-				Default:     false,
-				Description: "In a Slow POST attack, an attacker begins by sending a legitimate HTTP POST header to a Web server, exactly as they would under normal circumstances. The header specifies the exact size of the message body that will then follow. However, that message body is then sent at an alarmingly low rate – sometimes as slow as 1 byte per approximately two minutes.",
 			},
 			ForwardForField: {
 				Type:        schema.TypeBool,
@@ -157,24 +127,6 @@ func resourceHaproxySectionListen() *schema.Resource {
 				Optional:    true,
 				Default:     false,
 				Description: "HTTP compression allows you to shrink the body of a response before it is relayed to a client, which results in using less network bandwidth per request. From a client's perspective, this reduces latency.",
-			},
-			AntiBotField: {
-				Type:        schema.TypeBool,
-				Optional:    true,
-				Default:     false,
-				Description: "Add Anti Bot settings.",
-			},
-			DdosField: {
-				Type:        schema.TypeBool,
-				Optional:    true,
-				Default:     false,
-				Description: "DDOS attack protect.",
-			},
-			WafField: {
-				Type:        schema.TypeBool,
-				Optional:    true,
-				Default:     false,
-				Description: "Add WAF settings.",
 			},
 			CircuitBreakingField: {
 				Type:        schema.TypeSet,
@@ -228,19 +180,15 @@ func resourceHaproxySectionListen() *schema.Resource {
 	}
 }
 
-func resourceHaproxySectionListenCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceHaproxySectionBackendCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
-
 	if err := validateModeAndOptions(d); err != nil {
 		return diag.FromErr(err)
 	}
-
-	binds := parseUserBindsList(d.Get(BindsField).([]interface{}))
 	backends := parseBackendsServerList(d.Get(BackendServersField).([]interface{}))
 	acls := parseAclsList(d.Get(AclsField).([]interface{}))
 	headers := parseHeaderList(d.Get(HeadersField).([]interface{}))
 	circuitBreaking, errs := getSetMap(d, CircuitBreakingField)
-
 	if errs != nil {
 		return diag.FromErr(errs)
 	}
@@ -262,12 +210,11 @@ func resourceHaproxySectionListenCreate(ctx context.Context, d *schema.ResourceD
 	}
 
 	requestBody := map[string]interface{}{
-		BindsField:           binds,
 		BackendServersField:  backends,
 		AclsField:            acls,
 		HeadersField:         headers,
 		NameField:            d.Get(NameField),
-		TypeField:            "listen",
+		TypeField:            "backend",
 		ServerIdField:        d.Get(ServerIdField),
 		ActionField:          d.Get(ActionField),
 		BalanceField:         d.Get(BalanceField),
@@ -283,15 +230,10 @@ func resourceHaproxySectionListenCreate(ctx context.Context, d *schema.ResourceD
 		CompressionField:     d.Get(CompressionField),
 		ForwardForField:      d.Get(ForwardForField),
 		SslOffloadingField:   d.Get(SslOffloadingField),
-		SlowAttackField:      d.Get(SlowAttackField),
-		AntiBotField:         d.Get(AntiBotField),
-		DdosField:            d.Get(DdosField),
-		WafField:             d.Get(WafField),
 		RedisPatchField:      d.Get(RedisPatchField),
-		MaxconnFiled:         d.Get(MaxconnFiled),
 	}
 
-	resp, err := client.doRequest("POST", fmt.Sprintf("api/service/haproxy/%d/section/listen", d.Get(ServerIdField)), requestBody)
+	resp, err := client.doRequest("POST", fmt.Sprintf("api/service/haproxy/%d/section/backend", d.Get(ServerIdField)), requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -307,10 +249,10 @@ func resourceHaproxySectionListenCreate(ctx context.Context, d *schema.ResourceD
 	}
 
 	d.SetId(fmt.Sprintf("%s", id))
-	return resourceHaproxySectionListenRead(ctx, d, m)
+	return resourceHaproxySectionBackendRead(ctx, d, m)
 }
 
-func resourceHaproxySectionListenRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceHaproxySectionBackendRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
 	fullID := d.Id()
 	parts := strings.Split(fullID, "-")
@@ -319,13 +261,12 @@ func resourceHaproxySectionListenRead(ctx context.Context, d *schema.ResourceDat
 	}
 	serverId := parts[0]
 	sectionName := strings.Join(parts[1:], "-")
-	if err := validateModeAndOptions(d); err != nil {
-		return diag.FromErr(err)
-	}
-	resp, err := client.doRequest("GET", fmt.Sprintf("api/service/haproxy/%s/section/listen/%s", serverId, sectionName), nil)
+
+	resp, err := client.doRequest("GET", fmt.Sprintf("api/service/haproxy/%s/section/backend/%s", serverId, sectionName), nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
 	var result map[string]interface{}
 	if err := json.Unmarshal(resp, &result); err != nil {
 		return diag.FromErr(err)
@@ -341,12 +282,7 @@ func resourceHaproxySectionListenRead(ctx context.Context, d *schema.ResourceDat
 	d.Set(CompressionField, result[CompressionField])
 	d.Set(ForwardForField, result[ForwardForField])
 	d.Set(SslOffloadingField, result[SslOffloadingField])
-	d.Set(SlowAttackField, result[SlowAttackField])
-	d.Set(AntiBotField, result[AntiBotField])
-	d.Set(DdosField, result[DdosField])
-	d.Set(WafField, result[WafField])
 	d.Set(RedisPatchField, result[RedisPatchField])
-	d.Set(MaxconnFiled, result[MaxconnFiled])
 
 	if err = setTimeoutField(d, CircuitBreakingField, result[CircuitBreakingField]); err != nil {
 		fmt.Println("Error:", err)
@@ -365,11 +301,6 @@ func resourceHaproxySectionListenRead(ctx context.Context, d *schema.ResourceDat
 		fmt.Println("Error:", err)
 	}
 
-	binds, err := parseConfig(result[BindsField])
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
 	backendServers, err := parseConfig(result[BackendServersField])
 	if err != nil {
 		return diag.FromErr(err)
@@ -384,11 +315,9 @@ func resourceHaproxySectionListenRead(ctx context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 
-	bindsList := parseBindsResult(binds)
 	backendServersList := parseBackendServerResult(backendServers)
 	acls := parseAclsServerResult(acl)
 	headers := parseHeadersResult(header)
-	d.Set(BindsField, bindsList)
 	d.Set(BackendServersField, backendServersList)
 	d.Set(AclsField, acls)
 	d.Set(HeadersField, headers)
@@ -398,14 +327,13 @@ func resourceHaproxySectionListenRead(ctx context.Context, d *schema.ResourceDat
 	return nil
 }
 
-func resourceHaproxySectionListenUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceHaproxySectionBackendUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
-	serverId := d.Get(ServerIdField)
-	sectionName := d.Get(NameField)
 	if err := validateModeAndOptions(d); err != nil {
 		return diag.FromErr(err)
 	}
-	binds := parseUserBindsList(d.Get(BindsField).([]interface{}))
+	serverId := d.Get(ServerIdField)
+	sectionName := d.Get(NameField)
 	backends := parseBackendsServerList(d.Get(BackendServersField).([]interface{}))
 	acls := parseAclsList(d.Get(AclsField).([]interface{}))
 	header := parseHeaderList(d.Get(HeadersField).([]interface{}))
@@ -431,17 +359,13 @@ func resourceHaproxySectionListenUpdate(ctx context.Context, d *schema.ResourceD
 	}
 
 	requestBody := map[string]interface{}{
-		BindsField:           binds,
 		BackendServersField:  backends,
 		AclsField:            acls,
 		HeadersField:         header,
 		NameField:            d.Get(NameField),
-		TypeField:            "listen",
+		TypeField:            "backend",
 		ServerIdField:        d.Get(ServerIdField),
 		ActionField:          d.Get(ActionField),
-		BalanceField:         d.Get(BalanceField),
-		BlacklistField:       d.Get(BlacklistField),
-		WhitelistField:       d.Get(WhitelistField),
 		ModeField:            d.Get(ModeField),
 		CircuitBreakingField: circuitBreaking,
 		ServersCheckField:    serversCheck,
@@ -452,28 +376,23 @@ func resourceHaproxySectionListenUpdate(ctx context.Context, d *schema.ResourceD
 		CompressionField:     d.Get(CompressionField),
 		ForwardForField:      d.Get(ForwardForField),
 		SslOffloadingField:   d.Get(SslOffloadingField),
-		SlowAttackField:      d.Get(SlowAttackField),
-		AntiBotField:         d.Get(AntiBotField),
-		DdosField:            d.Get(DdosField),
-		WafField:             d.Get(WafField),
 		RedisPatchField:      d.Get(RedisPatchField),
-		MaxconnFiled:         d.Get(MaxconnFiled),
 	}
 
-	_, err := client.doRequest("PUT", fmt.Sprintf("api/service/haproxy/%d/section/listen/%s", serverId, sectionName), requestBody)
+	_, err := client.doRequest("PUT", fmt.Sprintf("api/service/haproxy/%d/section/backend/%s", serverId, sectionName), requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	return resourceHaproxySectionListenRead(ctx, d, m)
+	return resourceHaproxySectionBackendRead(ctx, d, m)
 }
 
-func resourceHaproxySectionListenDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+func resourceHaproxySectionBackendDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
 	serverId := d.Get(ServerIdField)
 	sectionName := d.Get(NameField)
 
-	_, err := client.doRequest("DELETE", fmt.Sprintf("api/service/haproxy/%d/section/listen/%s", serverId, sectionName), nil)
+	_, err := client.doRequest("DELETE", fmt.Sprintf("api/service/haproxy/%d/section/backend/%s", serverId, sectionName), nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -68,9 +68,6 @@ func parseBackendsServerList(configList []interface{}) []map[string]interface{} 
 			BackendServersBackupField:    configDetails[BackendServersBackupField].(bool),
 		})
 	}
-	if len(configs) == 0 {
-		return nil
-	}
 	return configs
 }
 
@@ -85,8 +82,19 @@ func parseAclsList(configList []interface{}) []map[string]interface{} {
 			AclThenValueField: configDetails[AclThenValueField].(string),
 		})
 	}
-	if len(configs) == 0 {
-		return nil
+	return configs
+}
+
+func parseHeaderList(configList []interface{}) []map[string]interface{} {
+	var configs []map[string]interface{}
+	for _, config := range configList {
+		configDetails := config.(map[string]interface{})
+		configs = append(configs, map[string]interface{}{
+			PathField:       configDetails[PathField].(string),
+			MethodField:     configDetails[MethodField].(string),
+			HeaderNameField: configDetails[HeaderNameField].(string),
+			ValueField:      configDetails[ValueField].(string),
+		})
 	}
 	return configs
 }
@@ -96,8 +104,40 @@ func parseBindsResult(config []map[string]interface{}) []interface{} {
 	for _, c := range config {
 		configList = append(configList, map[string]interface{}{
 			IPField:   c[IPField].(string),
-			PortField: c[PortField].(int),
+			PortField: c[PortField].(float64),
 		})
+	}
+	return configList
+}
+
+func parseAclsServerResult(config []map[string]interface{}) []interface{} {
+	var configList []interface{}
+	for _, c := range config {
+		configList = append(configList, map[string]interface{}{
+			AclIfField:        c[AclIfField].(float64),
+			AclValueField:     c[AclValueField].(string),
+			AclThenField:      c[AclThenField].(float64),
+			AclThenValueField: c[AclThenValueField].(string),
+		})
+	}
+	if len(configList) == 0 {
+		return nil
+	}
+	return configList
+}
+
+func parseHeadersResult(config []map[string]interface{}) []interface{} {
+	var configList []interface{}
+	for _, c := range config {
+		configList = append(configList, map[string]interface{}{
+			PathField:       c[PathField].(string),
+			MethodField:     c[MethodField].(string),
+			HeaderNameField: c[HeaderNameField].(string),
+			ValueField:      c[ValueField].(string),
+		})
+	}
+	if len(configList) == 0 {
+		return nil
 	}
 	return configList
 }
@@ -107,9 +147,9 @@ func parseBackendServerResult(config []map[string]interface{}) []interface{} {
 	for _, c := range config {
 		configList = append(configList, map[string]interface{}{
 			ServerTimeoutField:           c[ServerTimeoutField].(string),
-			BackendPortField:             c[BackendPortField].(int),
-			BackendServersPortCheckField: c[BackendServersPortCheckField].(int),
-			MaxconnFiled:                 c[MaxconnFiled].(int),
+			BackendPortField:             c[BackendPortField].(float64),
+			BackendServersPortCheckField: c[BackendServersPortCheckField].(float64),
+			MaxconnFiled:                 c[MaxconnFiled].(float64),
 			BackendServersSendProxyField: c[BackendServersSendProxyField].(bool),
 			BackendServersBackupField:    c[BackendServersBackupField].(bool),
 		})
@@ -147,6 +187,10 @@ func hashMapStringInterface(v interface{}) int {
 }
 
 func setTimeoutField(d *schema.ResourceData, fieldName string, value interface{}) error {
+	if value == nil {
+		items := make([]interface{}, 0)
+		return d.Set(fieldName, schema.NewSet(hashMapStringInterface, items))
+	}
 	switch v := value.(type) {
 	case map[string]interface{}:
 		items := []interface{}{v}
@@ -186,4 +230,24 @@ func getSetMap(d *schema.ResourceData, fieldName string) (map[string]interface{}
 		return timeoutMap, nil
 	}
 	return nil, fmt.Errorf("unexpected type in the set for field %s", fieldName)
+}
+
+func validateModeAndOptions(d *schema.ResourceData) error {
+	modeInterface := d.Get(ModeField)
+	mode, ok := modeInterface.(string)
+	if !ok {
+		return fmt.Errorf("field %s should be of type string", ModeField)
+	}
+
+	onlyWithHttpMode := []string{AntiBotField, CompressionField, CacheField, CookieField, SlowAttackField, SslOffloadingField, WafField}
+	if mode == "tcp" {
+		for _, field := range onlyWithHttpMode {
+			fieldValueInterface := d.Get(field)
+			fieldValue, ok := fieldValueInterface.(bool)
+			if ok && fieldValue {
+				return fmt.Errorf("field %s is not allowed in tcp mode", field)
+			}
+		}
+	}
+	return nil
 }
