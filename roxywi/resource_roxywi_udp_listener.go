@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/go-cty/cty"
 	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 const (
@@ -67,14 +67,16 @@ func resourceUdpListener() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						BackendIPField: {
-							Type:        schema.TypeString,
-							Required:    true,
-							Description: "IP address of the backend server.",
+							Type:         schema.TypeString,
+							Required:     true,
+							Description:  "IP address of the backend server.",
+							ValidateFunc: validation.IsIPAddress,
 						},
 						BackendPortField: {
-							Type:        schema.TypeInt,
-							Required:    true,
-							Description: "Port number on which the backend server listens for requests.",
+							Type:         schema.TypeInt,
+							Required:     true,
+							Description:  "Port number on which the backend server listens for requests.",
+							ValidateFunc: validation.IsPortNumber,
 						},
 						BackendWeightField: {
 							Type:        schema.TypeInt,
@@ -98,19 +100,15 @@ func resourceUdpListener() *schema.Resource {
 				Type:        schema.TypeString,
 				Required:    true,
 				Description: fmt.Sprintf("Load balancing algorithm. Available values are: `%s`,`%s`,`%s`,`%s`,`%s`,`%s`,`%s`.", LbAlgorithmRoundRobin, LbAlgorithmWeightRoundRobin, LbAlgorithmLeastConn, LbAlgorithmWeightLeastConn, LbAlgorithmSourceHash, LbAlgorithmDestinationHash, LbAlgorithmLocalityBasedLeastConn),
-				ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
-					v, ok := i.(string)
-					if !ok {
-						return diag.Errorf("Invalid type for %s: expected string", path)
-					}
-					algorithms := []string{LbAlgorithmRoundRobin, LbAlgorithmWeightRoundRobin, LbAlgorithmLeastConn, LbAlgorithmWeightLeastConn, LbAlgorithmSourceHash, LbAlgorithmDestinationHash, LbAlgorithmLocalityBasedLeastConn}
-					for _, alg := range algorithms {
-						if v == alg {
-							return nil
-						}
-					}
-					return diag.Errorf("Invalid value for %s: %s. Valid values are: %s", path, v, strings.Join(algorithms, ", "))
-				},
+				ValidateFunc: validation.StringInSlice([]string{
+					LbAlgorithmRoundRobin,
+					LbAlgorithmWeightRoundRobin,
+					LbAlgorithmLeastConn,
+					LbAlgorithmWeightLeastConn,
+					LbAlgorithmSourceHash,
+					LbAlgorithmDestinationHash,
+					LbAlgorithmLocalityBasedLeastConn,
+				}, false),
 			},
 			NameField: {
 				Type:        schema.TypeString,
@@ -118,9 +116,10 @@ func resourceUdpListener() *schema.Resource {
 				Description: "The name of the UDP listener.",
 			},
 			PortField: {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "Port on which the UDP listener will listen.",
+				Type:         schema.TypeString,
+				Required:     true,
+				Description:  "Port on which the UDP listener will listen.",
+				ValidateFunc: validation.IsPortNumber,
 			},
 			ServerIdField: {
 				Type:         schema.TypeInt,
@@ -130,21 +129,10 @@ func resourceUdpListener() *schema.Resource {
 				Description:  fmt.Sprintf("Server ID where the UDP listener is located. Must be determined if `%s` empty", ClusterIdField),
 			},
 			VIPField: {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: fmt.Sprintf("IP address of the UDP listener binding, if `%s` specified. VIP address of the UDP listener binding, if `%s` specified. Must be a valid IPv4 and exists.", ServerIdField, ClusterIdField),
-				ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
-					vip, ok := i.(string)
-					if !ok {
-						return diag.Errorf("expected type of %s to be string", path)
-					}
-
-					if vip == "" {
-						return diag.Errorf("VIP cannot be empty")
-					}
-
-					return nil
-				},
+				Type:         schema.TypeString,
+				Required:     true,
+				Description:  fmt.Sprintf("IP address of the UDP listener binding, if `%s` specified. VIP address of the UDP listener binding, if `%s` specified. Must be a valid IPv4 and exists.", ServerIdField, ClusterIdField),
+				ValidateFunc: validation.IsIPAddress,
 			},
 		},
 	}

@@ -26,7 +26,7 @@ resource "roxywi_backup_s3" "example" {
   description = "Daily backup of application data to S3"
   server_id   = 29
   s3_server   = "https://s3-server.com"
-  time        = "daily" # Время выполнения резервного копирования (в формате HH:MM)
+  time        = "daily"
 }
 ```
 
