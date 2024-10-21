@@ -92,7 +92,7 @@ func resourceUdpListener() *schema.Resource {
 				Description: "The description of the UDP listener.",
 			},
 			GroupIdField: {
-				Type:        schema.TypeString,
+				Type:        schema.TypeInt,
 				Optional:    true,
 				Description: "ID of the group.",
 			},
@@ -116,7 +116,7 @@ func resourceUdpListener() *schema.Resource {
 				Description: "The name of the UDP listener.",
 			},
 			PortField: {
-				Type:         schema.TypeString,
+				Type:         schema.TypeInt,
 				Required:     true,
 				Description:  "Port on which the UDP listener will listen.",
 				ValidateFunc: validation.IsPortNumber,
@@ -151,9 +151,9 @@ func resourceUdpListenerCreate(ctx context.Context, d *schema.ResourceData, m in
 
 	description := strings.ReplaceAll(d.Get(DescriptionField).(string), "'", "")
 	name := strings.ReplaceAll(d.Get(NameField).(string), "'", "")
-	groupID := d.Get(GroupIdField).(string)
+	groupID := d.Get(GroupIdField).(int)
 	lbAlgo := d.Get(LbAlgorithmField).(string)
-	port := d.Get(PortField).(string)
+	port := d.Get(PortField).(int)
 
 	configs := parseConfigList(d.Get(ConfigField).([]interface{}))
 
@@ -239,9 +239,9 @@ func resourceUdpListenerUpdate(ctx context.Context, d *schema.ResourceData, m in
 
 	description := strings.ReplaceAll(d.Get(DescriptionField).(string), "'", "")
 	name := strings.ReplaceAll(d.Get(NameField).(string), "'", "")
-	groupID := d.Get(GroupIdField).(string)
+	groupID := d.Get(GroupIdField).(int)
 	lbAlgo := d.Get(LbAlgorithmField).(string)
-	port := d.Get(PortField).(string)
+	port := d.Get(PortField).(int)
 
 	configs := parseConfigList(d.Get(ConfigField).([]interface{}))
 
