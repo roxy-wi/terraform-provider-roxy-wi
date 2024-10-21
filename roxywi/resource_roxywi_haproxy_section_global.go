@@ -175,14 +175,5 @@ func resourceHaproxySectionGlobalUpdate(ctx context.Context, d *schema.ResourceD
 }
 
 func resourceHaproxySectionGlobalDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*Config).Client
-	serverId := d.Get(ServerIdField)
-
-	_, err := client.doRequest("DELETE", fmt.Sprintf("api/service/haproxy/%d/section/global", serverId), nil)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	d.SetId("")
 	return nil
 }

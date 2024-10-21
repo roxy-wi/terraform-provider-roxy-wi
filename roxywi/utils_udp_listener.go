@@ -21,6 +21,9 @@ func parseConfigList(configList []interface{}) []map[string]interface{} {
 }
 
 func parseConfig(config interface{}) ([]map[string]interface{}, error) {
+	if config == nil {
+		return nil, nil
+	}
 	switch v := config.(type) {
 	case string:
 		var parsedConfig []map[string]interface{}

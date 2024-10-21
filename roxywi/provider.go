@@ -55,6 +55,10 @@ func Provider() *schema.Provider {
 			"roxywi_haproxy_section_peers":     resourceHaproxySectionPeers(),
 			"roxywi_haproxy_section_user_list": resourceHaproxySectionUserlist(),
 			"roxywi_haproxy_section_global":    resourceHaproxySectionGlobal(),
+			"roxywi_haproxy_section_defaults":  resourceHaproxySectionDefaults(),
+			"roxywi_haproxy_section_listen":    resourceHaproxySectionListen(),
+			"roxywi_haproxy_section_frontend":  resourceHaproxySectionFrontend(),
+			"roxywi_haproxy_section_backend":   resourceHaproxySectionBackend(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"roxywi_group":        dataSourceGroup(),
