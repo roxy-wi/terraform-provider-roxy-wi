@@ -377,6 +377,7 @@ func resourceHaproxySectionBackendUpdate(ctx context.Context, d *schema.Resource
 		ForwardForField:      d.Get(ForwardForField),
 		SslOffloadingField:   d.Get(SslOffloadingField),
 		RedisPatchField:      d.Get(RedisPatchField),
+		BalanceField:         d.Get(BalanceField),
 	}
 
 	_, err := client.doRequest("PUT", fmt.Sprintf("api/service/haproxy/%d/section/backend/%s", serverId, sectionName), requestBody)
