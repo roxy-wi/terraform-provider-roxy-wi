@@ -232,7 +232,7 @@ func getSetMap(d *schema.ResourceData, fieldName string) (map[string]interface{}
 	return nil, fmt.Errorf("unexpected type in the set for field %s", fieldName)
 }
 
-func validateModeAndOptions(d *schema.ResourceData) error {
+func validateModeAndOptions(d *schema.ResourceDiff) error {
 	modeInterface := d.Get(ModeField)
 	mode, ok := modeInterface.(string)
 	if !ok {

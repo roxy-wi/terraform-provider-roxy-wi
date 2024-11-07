@@ -168,9 +168,9 @@ func resourceHaproxySectionFrontend() *schema.Resource {
 func resourceHaproxySectionFrontendCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
 
-	if err := validateModeAndOptions(d); err != nil {
-		return diag.FromErr(err)
-	}
+	//if err := validateModeAndOptions(d); err != nil {
+	//	return diag.FromErr(err)
+	//}
 
 	binds := parseUserBindsList(d.Get(BindsField).([]interface{}))
 	acls := parseAclsList(d.Get(AclsField).([]interface{}))
@@ -289,9 +289,9 @@ func resourceHaproxySectionFrontendRead(ctx context.Context, d *schema.ResourceD
 
 func resourceHaproxySectionFrontendUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
-	if err := validateModeAndOptions(d); err != nil {
-		return diag.FromErr(err)
-	}
+	//if err := validateModeAndOptions(d); err != nil {
+	//	return diag.FromErr(err)
+	//}
 	serverId := d.Get(ServerIdField)
 	sectionName := d.Get(NameField)
 	binds := parseUserBindsList(d.Get(BindsField).([]interface{}))

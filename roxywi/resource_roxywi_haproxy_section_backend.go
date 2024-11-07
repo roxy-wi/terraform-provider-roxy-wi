@@ -182,9 +182,9 @@ func resourceHaproxySectionBackend() *schema.Resource {
 
 func resourceHaproxySectionBackendCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
-	if err := validateModeAndOptions(d); err != nil {
-		return diag.FromErr(err)
-	}
+	//if err := validateModeAndOptions(d); err != nil {
+	//	return diag.FromErr(err)
+	//}
 	backends := parseBackendsServerList(d.Get(BackendServersField).([]interface{}))
 	acls := parseAclsList(d.Get(AclsField).([]interface{}))
 	headers := parseHeaderList(d.Get(HeadersField).([]interface{}))
@@ -329,9 +329,9 @@ func resourceHaproxySectionBackendRead(ctx context.Context, d *schema.ResourceDa
 
 func resourceHaproxySectionBackendUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
-	if err := validateModeAndOptions(d); err != nil {
-		return diag.FromErr(err)
-	}
+	//if err := validateModeAndOptions(d); err != nil {
+	//	return diag.FromErr(err)
+	//}
 	serverId := d.Get(ServerIdField)
 	sectionName := d.Get(NameField)
 	backends := parseBackendsServerList(d.Get(BackendServersField).([]interface{}))
