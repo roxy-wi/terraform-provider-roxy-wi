@@ -20,7 +20,7 @@ func resourceHaproxySectionListen() *schema.Resource {
 		DeleteWithoutTimeout: resourceHaproxySectionListenDelete,
 		CustomizeDiff: func(ctx context.Context, d *schema.ResourceDiff, m interface{}) error {
 			if err := validateModeAndOptions(d); err != nil {
-				return fmt.Errorf("error while validateModeAndOptions: %s", err.Error())
+				return fmt.Errorf("error while validateModeAndOptions: %w", err)
 			}
 			return nil
 		},
