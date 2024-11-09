@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -116,12 +115,10 @@ func resourceHaproxySectionGlobal() *schema.Resource {
 
 func resourceHaproxySectionGlobalRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
-	fullID := d.Id()
-	parts := strings.Split(fullID, "-")
-	if len(parts) < 2 {
-		return diag.Errorf("expected ID in the format 'server_id-section_name', got: %s", fullID)
+	serverId, _, err := resourceSectionParseId(d.Id())
+	if err != nil {
+		return diag.FromErr(err)
 	}
-	serverId := parts[0]
 
 	resp, err := client.doRequest("GET", fmt.Sprintf("api/service/haproxy/%s/section/global", serverId), nil)
 	if err != nil {

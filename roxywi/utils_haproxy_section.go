@@ -3,8 +3,33 @@ package roxywi
 import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"strings"
 )
 
+func parseServersList(configList []interface{}) []map[string]interface{} {
+	var configs []map[string]interface{}
+	for _, config := range configList {
+		configDetails := config.(map[string]interface{})
+		configs = append(configs, map[string]interface{}{
+			EthField:    configDetails[EthField].(string),
+			IDField:     intFromInterface(configDetails[IDField]),
+			MasterField: boolToInt(configDetails[MasterField].(bool)),
+		})
+	}
+	return configs
+}
+
+func parseServersResult(config []map[string]interface{}) []interface{} {
+	var configList []interface{}
+	for _, c := range config {
+		configList = append(configList, map[string]interface{}{
+			EthField:    c[EthField].(string),
+			IDField:     intFromInterface(c[IDField]),
+			MasterField: c[MasterField],
+		})
+	}
+	return configList
+}
 func parsePeersConfigList(configList []interface{}) []map[string]interface{} {
 	var configs []map[string]interface{}
 	for _, config := range configList {
@@ -232,7 +257,7 @@ func getSetMap(d *schema.ResourceData, fieldName string) (map[string]interface{}
 	return nil, fmt.Errorf("unexpected type in the set for field %s", fieldName)
 }
 
-func validateModeAndOptions(d *schema.ResourceData) error {
+func validateModeAndOptions(d *schema.ResourceDiff) error {
 	modeInterface := d.Get(ModeField)
 	mode, ok := modeInterface.(string)
 	if !ok {
@@ -250,4 +275,15 @@ func validateModeAndOptions(d *schema.ResourceData) error {
 		}
 	}
 	return nil
+}
+
+func resourceSectionParseId(fullId string) (string, string, error) {
+	parts := strings.Split(fullId, "-")
+	if len(parts) < 2 {
+		return "", "", fmt.Errorf("expected ID in the format 'server_id-section_name', got: %s", fullId)
+	}
+	serverId := parts[0]
+	sectionName := strings.Join(parts[1:], "-")
+	return serverId, sectionName, nil
+
 }

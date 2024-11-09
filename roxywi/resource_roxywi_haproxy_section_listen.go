@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -18,6 +17,12 @@ func resourceHaproxySectionListen() *schema.Resource {
 		ReadWithoutTimeout:   resourceHaproxySectionListenRead,
 		UpdateWithoutTimeout: resourceHaproxySectionListenUpdate,
 		DeleteWithoutTimeout: resourceHaproxySectionListenDelete,
+		CustomizeDiff: func(ctx context.Context, d *schema.ResourceDiff, m interface{}) error {
+			if err := validateModeAndOptions(d); err != nil {
+				return fmt.Errorf("error while validateModeAndOptions: %w", err)
+			}
+			return nil
+		},
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -231,10 +236,6 @@ func resourceHaproxySectionListen() *schema.Resource {
 func resourceHaproxySectionListenCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
 
-	if err := validateModeAndOptions(d); err != nil {
-		return diag.FromErr(err)
-	}
-
 	binds := parseUserBindsList(d.Get(BindsField).([]interface{}))
 	backends := parseBackendsServerList(d.Get(BackendServersField).([]interface{}))
 	acls := parseAclsList(d.Get(AclsField).([]interface{}))
@@ -312,16 +313,11 @@ func resourceHaproxySectionListenCreate(ctx context.Context, d *schema.ResourceD
 
 func resourceHaproxySectionListenRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
-	fullID := d.Id()
-	parts := strings.Split(fullID, "-")
-	if len(parts) < 2 {
-		return diag.Errorf("expected ID in the format 'server_id-section_name', got: %s", fullID)
-	}
-	serverId := parts[0]
-	sectionName := strings.Join(parts[1:], "-")
-	if err := validateModeAndOptions(d); err != nil {
+	serverId, sectionName, err := resourceSectionParseId(d.Id())
+	if err != nil {
 		return diag.FromErr(err)
 	}
+
 	resp, err := client.doRequest("GET", fmt.Sprintf("api/service/haproxy/%s/section/listen/%s", serverId, sectionName), nil)
 	if err != nil {
 		return diag.FromErr(err)
@@ -402,9 +398,7 @@ func resourceHaproxySectionListenUpdate(ctx context.Context, d *schema.ResourceD
 	client := m.(*Config).Client
 	serverId := d.Get(ServerIdField)
 	sectionName := d.Get(NameField)
-	if err := validateModeAndOptions(d); err != nil {
-		return diag.FromErr(err)
-	}
+
 	binds := parseUserBindsList(d.Get(BindsField).([]interface{}))
 	backends := parseBackendsServerList(d.Get(BackendServersField).([]interface{}))
 	acls := parseAclsList(d.Get(AclsField).([]interface{}))

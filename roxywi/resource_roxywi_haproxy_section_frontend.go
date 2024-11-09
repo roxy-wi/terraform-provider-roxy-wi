@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -18,6 +17,12 @@ func resourceHaproxySectionFrontend() *schema.Resource {
 		ReadWithoutTimeout:   resourceHaproxySectionFrontendRead,
 		UpdateWithoutTimeout: resourceHaproxySectionFrontendUpdate,
 		DeleteWithoutTimeout: resourceHaproxySectionFrontendDelete,
+		CustomizeDiff: func(ctx context.Context, d *schema.ResourceDiff, m interface{}) error {
+			if err := validateModeAndOptions(d); err != nil {
+				return fmt.Errorf("error while validateModeAndOptions: %w", err)
+			}
+			return nil
+		},
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -168,10 +173,6 @@ func resourceHaproxySectionFrontend() *schema.Resource {
 func resourceHaproxySectionFrontendCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
 
-	if err := validateModeAndOptions(d); err != nil {
-		return diag.FromErr(err)
-	}
-
 	binds := parseUserBindsList(d.Get(BindsField).([]interface{}))
 	acls := parseAclsList(d.Get(AclsField).([]interface{}))
 	headers := parseHeaderList(d.Get(HeadersField).([]interface{}))
@@ -225,13 +226,10 @@ func resourceHaproxySectionFrontendCreate(ctx context.Context, d *schema.Resourc
 
 func resourceHaproxySectionFrontendRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
-	fullID := d.Id()
-	parts := strings.Split(fullID, "-")
-	if len(parts) < 2 {
-		return diag.Errorf("expected ID in the format 'server_id-section_name', got: %s", fullID)
+	serverId, sectionName, err := resourceSectionParseId(d.Id())
+	if err != nil {
+		return diag.FromErr(err)
 	}
-	serverId := parts[0]
-	sectionName := strings.Join(parts[1:], "-")
 
 	resp, err := client.doRequest("GET", fmt.Sprintf("api/service/haproxy/%s/section/frontend/%s", serverId, sectionName), nil)
 	if err != nil {
@@ -289,9 +287,7 @@ func resourceHaproxySectionFrontendRead(ctx context.Context, d *schema.ResourceD
 
 func resourceHaproxySectionFrontendUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
-	if err := validateModeAndOptions(d); err != nil {
-		return diag.FromErr(err)
-	}
+
 	serverId := d.Get(ServerIdField)
 	sectionName := d.Get(NameField)
 	binds := parseUserBindsList(d.Get(BindsField).([]interface{}))

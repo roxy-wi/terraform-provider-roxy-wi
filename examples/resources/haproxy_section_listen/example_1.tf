@@ -1,10 +1,8 @@
 resource "roxywi_haproxy_section_listen" "example" {
   name           = "example-listen"
   mode           = "tcp"
-  ssl_offloading = true
   balance        = "roundrobin"
   server_id      = 1
-  waf            = true
   headers {
     path   = "http-response"
     method = "add-header"
