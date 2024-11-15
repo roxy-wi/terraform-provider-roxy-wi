@@ -1,0 +1,1 @@
+% terraform import roxywi_ha_cluster_vip.example <cluster_id>-vip-<vip_id>
