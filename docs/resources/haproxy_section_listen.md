@@ -18,12 +18,10 @@ Manage HAProxy Listen sections. Please note that changes may cause HAProxy to re
 
 ```terraform
 resource "roxywi_haproxy_section_listen" "example" {
-  name           = "example-listen"
-  mode           = "tcp"
-  ssl_offloading = true
-  balance        = "roundrobin"
-  server_id      = 1
-  waf            = true
+  name      = "example-listen"
+  mode      = "tcp"
+  balance   = "roundrobin"
+  server_id = 1
   headers {
     path   = "http-response"
     method = "add-header"

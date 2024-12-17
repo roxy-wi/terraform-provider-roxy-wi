@@ -59,6 +59,7 @@ func Provider() *schema.Provider {
 			"roxywi_haproxy_section_listen":    resourceHaproxySectionListen(),
 			"roxywi_haproxy_section_frontend":  resourceHaproxySectionFrontend(),
 			"roxywi_haproxy_section_backend":   resourceHaproxySectionBackend(),
+			"roxywi_haproxy_list":              resourceHaproxyList(),
 			"roxywi_ha_cluster":                resourceHaCluster(),
 			"roxywi_ha_cluster_vip":            resourceHaClusterVip(),
 			"roxywi_letsencrypt":               resourceLetsencrypt(),

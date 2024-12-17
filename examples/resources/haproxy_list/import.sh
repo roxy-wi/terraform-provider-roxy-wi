@@ -1,0 +1,1 @@
+% terraform import roxywi_haproxy_list.example 1-white-example.lst
