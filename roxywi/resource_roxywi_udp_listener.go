@@ -31,6 +31,7 @@ const (
 	LbAlgorithmSourceHash             = "sh"
 	LbAlgorithmDestinationHash        = "dh"
 	LbAlgorithmLocalityBasedLeastConn = "lblc"
+	IsCheckerFileld                   = "is_checker"
 )
 
 func resourceUdpListener() *schema.Resource {
@@ -134,6 +135,11 @@ func resourceUdpListener() *schema.Resource {
 				Description:  fmt.Sprintf("IP address of the UDP listener binding, if `%s` specified. VIP address of the UDP listener binding, if `%s` specified. Must be a valid IPv4 and exists.", ServerIdField, ClusterIdField),
 				ValidateFunc: validation.IsIPAddress,
 			},
+			IsCheckerFileld: {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "Should be Checker service check this UDP listener?",
+			},
 		},
 	}
 }
@@ -168,6 +174,7 @@ func resourceUdpListenerCreate(ctx context.Context, d *schema.ResourceData, m in
 		ServerIdField:    serverID,
 		VIPField:         vip,
 		ReconfigureField: true,
+		IsCheckerFileld:  boolToInt(d.Get(IsCheckerFileld).(bool)),
 	}
 
 	resp, err := client.doRequest("POST", "/api/udp/listener", requestBody)
@@ -213,6 +220,7 @@ func resourceUdpListenerRead(ctx context.Context, d *schema.ResourceData, m inte
 	d.Set(PortField, intFromInterface(result[PortField]))
 	d.Set(ServerIdField, intFromInterface(result[ServerIdField]))
 	d.Set(VIPField, result[VIPField])
+	d.Set(IsCheckerFileld, intToBool(result[IsCheckerFileld].(float64)))
 
 	config, err := parseConfig(result["config"])
 	if err != nil {
@@ -255,6 +263,7 @@ func resourceUdpListenerUpdate(ctx context.Context, d *schema.ResourceData, m in
 		PortField:        port,
 		ServerIdField:    serverID,
 		VIPField:         vip,
+		IsCheckerFileld:  boolToInt(d.Get(IsCheckerFileld).(bool)),
 	}
 
 	if d.HasChange(ConfigField) || d.HasChange(LbAlgorithmField) || d.HasChange(PortField) || d.HasChange(VIPField) {

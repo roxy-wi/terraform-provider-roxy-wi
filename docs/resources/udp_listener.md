@@ -56,6 +56,7 @@ resource "roxywi_udp_listener" "example" {
 - `description` (String) The description of the UDP listener.
 - `group_id` (String) ID of the group.
 - `server_id` (Number) Server ID where the UDP listener is located. Must be determined if `cluster_id` empty
+- `is_checker` (Boolean) Should be Checker service check this UDP listener?
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 
 ### Read-Only
