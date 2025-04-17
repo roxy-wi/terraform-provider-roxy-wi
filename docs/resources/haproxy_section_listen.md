@@ -70,7 +70,7 @@ resource "roxywi_haproxy_section_listen" "example" {
 - `headers` (Block List) Set custom check parameters. (see [below for nested schema](#nestedblock--headers))
 - `health_check` (Block Set) Set custom check parameters. (see [below for nested schema](#nestedblock--health_check))
 - `maxconn` (Number) Limits the per-process connection limit.
-- `mode` (String) Load balancing mode. Available values are: `tcp`,`http`.
+- `mode` (String) Load balancing mode. Available values are: `tcp`,`http` and `log`.
 - `redispatch` (Boolean) In HTTP mode, if a server designated by a cookie is down, clients may definitely stick to it because they cannot flush the cookie, so they will not be able to access the service anymore. Specifying 'option redispatch' will allow the proxy to break their persistence and redistribute them to a working server. It also allows to retry connections to another server in case of multiple connection failures. Of course, it requires having 'retries' set to a nonzero value.
 - `servers_check` (Block Set) Set custom check parameters. (see [below for nested schema](#nestedblock--servers_check))
 - `slow_attack` (Boolean) In a Slow POST attack, an attacker begins by sending a legitimate HTTP POST header to a Web server, exactly as they would under normal circumstances. The header specifies the exact size of the message body that will then follow. However, that message body is then sent at an alarmingly low rate – sometimes as slow as 1 byte per approximately two minutes.

@@ -44,6 +44,7 @@ const (
 	HealthCheckDomainField         = "domain"
 	HealthCheckPathField           = "path"
 	ModeField                      = "mode"
+	ModeLog                        = "log"
 	ModeTCP                        = "tcp"
 	ModeHTTP                       = "http"
 	ServersCheckField              = "servers_check"

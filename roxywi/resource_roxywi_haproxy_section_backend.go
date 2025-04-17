@@ -80,10 +80,11 @@ func resourceHaproxySectionBackend() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Default:     ModeHTTP,
-				Description: fmt.Sprintf("Load balancing mode. Available values are: `%s`,`%s`.", ModeTCP, ModeHTTP),
+				Description: fmt.Sprintf("Load balancing mode. Available values are: `%s`,`%s`, `%s`.", ModeTCP, ModeHTTP, ModeLog),
 				ValidateFunc: validation.StringInSlice([]string{
 					ModeTCP,
 					ModeHTTP,
+					ModeLog,
 				}, false),
 			},
 			ServerIdField: {

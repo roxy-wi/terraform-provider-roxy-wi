@@ -63,7 +63,7 @@ resource "roxywi_haproxy_section_backend" "example" {
 - `forward_for` (Boolean) When HAProxy Enterprise proxies a TCP connection, it overwrites the client's source IP address with its own when communicating with the backend server. However, when relaying HTTP messages, it can store the client's address in the HTTP header X-Forwarded-For. The backend server can then be configured to read the value from that header to retrieve the client's IP address.
 - `headers` (Block List) Set custom check parameters. (see [below for nested schema](#nestedblock--headers))
 - `health_check` (Block Set) Set custom check parameters. (see [below for nested schema](#nestedblock--health_check))
-- `mode` (String) Load balancing mode. Available values are: `tcp`,`http`.
+- `mode` (String) Load balancing mode. Available values are: `tcp`,`http` and `log`.
 - `redispatch` (Boolean) In HTTP mode, if a server designated by a cookie is down, clients may definitely stick to it because they cannot flush the cookie, so they will not be able to access the service anymore. Specifying 'option redispatch' will allow the proxy to break their persistence and redistribute them to a working server. It also allows to retry connections to another server in case of multiple connection failures. Of course, it requires having 'retries' set to a nonzero value.
 - `servers_check` (Block Set) Set custom check parameters. (see [below for nested schema](#nestedblock--servers_check))
 - `ssl` (Block Set) SSL settings. (see [below for nested schema](#nestedblock--ssl))
