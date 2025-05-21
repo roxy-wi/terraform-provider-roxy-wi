@@ -63,6 +63,7 @@ func Provider() *schema.Provider {
 			"roxywi_ha_cluster":                resourceHaCluster(),
 			"roxywi_ha_cluster_vip":            resourceHaClusterVip(),
 			"roxywi_letsencrypt":               resourceLetsencrypt(),
+			"roxywi_nginx_section_upstream":    resourceNginxSectionUpstream(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"roxywi_group":        dataSourceGroup(),
