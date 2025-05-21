@@ -1,0 +1,1 @@
+% terraform import roxywi_nginx_section_upstream.example 1-example
