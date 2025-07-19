@@ -69,6 +69,7 @@ resource "roxywi_haproxy_section_frontend" "example" {
 - `slow_attack` (Boolean) In a Slow POST attack, an attacker begins by sending a legitimate HTTP POST header to a Web server, exactly as they would under normal circumstances. The header specifies the exact size of the message body that will then follow. However, that message body is then sent at an alarmingly low rate – sometimes as slow as 1 byte per approximately two minutes.
 - `ssl` (Block Set) SSL settings. (see [below for nested schema](#nestedblock--ssl))
 - `ssl_offloading` (Boolean) Enable redirection from HTTP scheme to HTTPS scheme.
+- `http2` (Boolean) Enable HTTP2 for HTTPS scheme.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `waf` (Boolean) Add WAF settings.
 - `whitelist` (String) Path to a whitelist.

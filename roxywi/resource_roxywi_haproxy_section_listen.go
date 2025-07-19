@@ -152,6 +152,12 @@ func resourceHaproxySectionListen() *schema.Resource {
 				Default:     false,
 				Description: "Enable redirection from HTTP scheme to HTTPS scheme.",
 			},
+			Http2Field: {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "Enable HTTP2 for HTTPS scheme.",
+			},
 			RedisPatchField: {
 				Type:        schema.TypeBool,
 				Optional:    true,
@@ -285,6 +291,7 @@ func resourceHaproxySectionListenCreate(ctx context.Context, d *schema.ResourceD
 		CompressionField:     d.Get(CompressionField),
 		ForwardForField:      d.Get(ForwardForField),
 		SslOffloadingField:   d.Get(SslOffloadingField),
+		Http2Field:           d.Get(Http2Field),
 		SlowAttackField:      d.Get(SlowAttackField),
 		AntiBotField:         d.Get(AntiBotField),
 		DdosField:            d.Get(DdosField),
@@ -338,6 +345,7 @@ func resourceHaproxySectionListenRead(ctx context.Context, d *schema.ResourceDat
 	d.Set(CompressionField, result[CompressionField])
 	d.Set(ForwardForField, result[ForwardForField])
 	d.Set(SslOffloadingField, result[SslOffloadingField])
+	d.Set(Http2Field, result[Http2Field])
 	d.Set(SlowAttackField, result[SlowAttackField])
 	d.Set(AntiBotField, result[AntiBotField])
 	d.Set(DdosField, result[DdosField])
@@ -447,6 +455,7 @@ func resourceHaproxySectionListenUpdate(ctx context.Context, d *schema.ResourceD
 		CompressionField:     d.Get(CompressionField),
 		ForwardForField:      d.Get(ForwardForField),
 		SslOffloadingField:   d.Get(SslOffloadingField),
+		Http2Field:           d.Get(Http2Field),
 		SlowAttackField:      d.Get(SlowAttackField),
 		AntiBotField:         d.Get(AntiBotField),
 		DdosField:            d.Get(DdosField),

@@ -126,6 +126,12 @@ func resourceHaproxySectionFrontend() *schema.Resource {
 				Default:     false,
 				Description: "Enable redirection from HTTP scheme to HTTPS scheme.",
 			},
+			Http2Field: {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "Enable HTTP2 for HTTPS scheme.",
+			},
 			CompressionField: {
 				Type:        schema.TypeBool,
 				Optional:    true,
@@ -198,6 +204,7 @@ func resourceHaproxySectionFrontendCreate(ctx context.Context, d *schema.Resourc
 		CompressionField:   d.Get(CompressionField),
 		ForwardForField:    d.Get(ForwardForField),
 		SslOffloadingField: d.Get(SslOffloadingField),
+		Http2Field:         d.Get(Http2Field),
 		SlowAttackField:    d.Get(SlowAttackField),
 		AntiBotField:       d.Get(AntiBotField),
 		DdosField:          d.Get(DdosField),
@@ -251,6 +258,7 @@ func resourceHaproxySectionFrontendRead(ctx context.Context, d *schema.ResourceD
 	d.Set(CompressionField, result[CompressionField])
 	d.Set(ForwardForField, result[ForwardForField])
 	d.Set(SslOffloadingField, result[SslOffloadingField])
+	d.Set(Http2Field, result[Http2Field])
 	d.Set(SlowAttackField, result[SlowAttackField])
 	d.Set(AntiBotField, result[AntiBotField])
 	d.Set(DdosField, result[DdosField])
@@ -315,6 +323,7 @@ func resourceHaproxySectionFrontendUpdate(ctx context.Context, d *schema.Resourc
 		CompressionField:   d.Get(CompressionField),
 		ForwardForField:    d.Get(ForwardForField),
 		SslOffloadingField: d.Get(SslOffloadingField),
+		Http2Field:         d.Get(Http2Field),
 		SlowAttackField:    d.Get(SlowAttackField),
 		AntiBotField:       d.Get(AntiBotField),
 		DdosField:          d.Get(DdosField),

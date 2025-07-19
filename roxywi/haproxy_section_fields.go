@@ -56,6 +56,7 @@ const (
 	SslCertField                   = "cert"
 	SslCheckField                  = "ssl_check_backend"
 	SslOffloadingField             = "ssl_offloading"
+	Http2Field                     = "http2"
 	RedisPatchField                = "redispatch"
 	RoundRobinAlgorithm            = "roundrobin"
 	SourceAlgorithm                = "source"
