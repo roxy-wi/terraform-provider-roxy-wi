@@ -105,12 +105,12 @@ func resourceServerCreate(ctx context.Context, d *schema.ResourceData, m interfa
 		return diag.FromErr(err)
 	}
 
-	id, ok := result["id"].(float64)
-	if !ok {
-		return diag.Errorf("unable to find ID in response: %v", result)
+	id, err := apiInt(result, "id")
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
-	d.SetId(fmt.Sprintf("%d", int(id)))
+	d.SetId(fmt.Sprintf("%d", id))
 	return resourceServerRead(ctx, d, m)
 }
 
@@ -128,15 +128,43 @@ func resourceServerRead(ctx context.Context, d *schema.ResourceData, m interface
 		return diag.FromErr(err)
 	}
 
-	d.Set(CredIDField, result[CredIDField])
-	description := strings.ReplaceAll(result[DescriptionField].(string), "'", "")
-	hostname := strings.ReplaceAll(result[HostnameField].(string), "'", "")
-	d.Set(DescriptionField, description)
-	d.Set(EnabledField, intToBool(result[EnabledField].(float64)))
-	d.Set(GroupIDField, result[GroupIDField])
-	d.Set(HostnameField, hostname)
-	d.Set(IPField, result[IPField])
-	d.Set(PortField, result[PortField])
+	if err := d.Set(CredIDField, result[CredIDField]); err != nil {
+
+		return diag.Errorf("set Terraform state: %v", err)
+
+	}
+	descriptionValue, err := apiString(result, DescriptionField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	hostnameValue, err := apiString(result, HostnameField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	enabled, err := apiBool(result, EnabledField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	description := strings.ReplaceAll(descriptionValue, "'", "")
+	hostname := strings.ReplaceAll(hostnameValue, "'", "")
+	if err := d.Set(DescriptionField, description); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(EnabledField, enabled); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(GroupIDField, result[GroupIDField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(HostnameField, hostname); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(IPField, result[IPField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(PortField, result[PortField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
 
 	return nil
 }

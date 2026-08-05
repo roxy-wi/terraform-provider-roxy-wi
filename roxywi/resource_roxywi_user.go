@@ -119,7 +119,11 @@ func resourceUserRead(ctx context.Context, d *schema.ResourceData, m interface{}
 	if err := d.Set(UserEmailField, result[UserEmailField]); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set(UserEnabledField, intToBool(result[UserEnabledField].(float64))); err != nil {
+	enabled, err := apiBool(result, UserEnabledField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set(UserEnabledField, enabled); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set(UserUsernameField, result[UserUsernameField]); err != nil {

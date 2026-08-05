@@ -273,17 +273,41 @@ func resourceHaproxySectionBackendRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	d.Set(NameField, result[NameField])
-	d.Set(BalanceField, result[BalanceField])
-	d.Set(ServerIdField, intFromInterface(result[ServerIdField]))
-	d.Set(BlacklistField, result[BlacklistField])
-	d.Set(WhitelistField, result[WhitelistField])
-	d.Set(ModeField, result[ModeField])
-	d.Set(CacheField, result[CacheField])
-	d.Set(CompressionField, result[CompressionField])
-	d.Set(ForwardForField, result[ForwardForField])
-	d.Set(SslOffloadingField, result[SslOffloadingField])
-	d.Set(RedisPatchField, result[RedisPatchField])
+	if err := d.Set(NameField, result[NameField]); err != nil {
+
+		return diag.Errorf("set Terraform state: %v", err)
+
+	}
+	if err := d.Set(BalanceField, result[BalanceField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(ServerIdField, intFromInterface(result[ServerIdField])); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(BlacklistField, result[BlacklistField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(WhitelistField, result[WhitelistField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(ModeField, result[ModeField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(CacheField, result[CacheField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(CompressionField, result[CompressionField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(ForwardForField, result[ForwardForField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(SslOffloadingField, result[SslOffloadingField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(RedisPatchField, result[RedisPatchField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
 
 	if err = setTimeoutField(d, CircuitBreakingField, result[CircuitBreakingField]); err != nil {
 		return diag.Errorf("set %s: %v", CircuitBreakingField, err)
@@ -319,9 +343,15 @@ func resourceHaproxySectionBackendRead(ctx context.Context, d *schema.ResourceDa
 	backendServersList := parseBackendServerResult(backendServers)
 	acls := parseAclsServerResult(acl)
 	headers := parseHeadersResult(header)
-	d.Set(BackendServersField, backendServersList)
-	d.Set(AclsField, acls)
-	d.Set(HeadersField, headers)
+	if err := d.Set(BackendServersField, backendServersList); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(AclsField, acls); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(HeadersField, headers); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
 
 	_ = setTimeoutField(d, CircuitBreakingField, result[CircuitBreakingField])
 

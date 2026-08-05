@@ -127,14 +127,17 @@ func resourceSSHCredentialCreate(ctx context.Context, d *schema.ResourceData, m 
 		return diag.Errorf("unexpected response format, could not unmarshal: %s", string(resp))
 	}
 
-	id, ok := result["id"].(float64)
-	if !ok {
-		return diag.Errorf("unable to find ID in response: %v", result)
+	id, err := apiInt(result, "id")
+	if err != nil {
+		return diag.FromErr(err)
 	}
-	d.SetId(fmt.Sprintf("%d", int(id)))
+	d.SetId(fmt.Sprintf("%d", id))
 
-	status, ok := result["status"].(string)
-	if !ok || status != "Ok" {
+	status, err := apiString(result, "status")
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if status != "Ok" {
 		return diag.Errorf("unexpected status in response: %v", result)
 	}
 
@@ -179,16 +182,42 @@ func resourceSSHCredentialRead(ctx context.Context, d *schema.ResourceData, m in
 	}
 	result := resultArray[0]
 
-	d.Set(GroupIDField, result[GroupIDField])
-	d.Set(KeyEnabledField, intToBool(result[KeyEnabledField].(float64)))
-	name := strings.ReplaceAll(result[NameField].(string), "'", "")
-	d.Set(NameField, name)
-	d.Set(PasswordField, result[PasswordField])
-	username := strings.ReplaceAll(result[UsernameField].(string), "'", "")
-	d.Set(UsernameField, username)
-	d.Set(PassPhraseField, result[PassPhraseField])
-	d.Set(PrivateKeyField, result[PrivateKeyField])
-	d.Set(SharedField, intToBool(result[SharedField].(float64)))
+	keyEnabled, err := apiBool(result, KeyEnabledField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	shared, err := apiBool(result, SharedField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	nameValue, err := apiString(result, NameField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	usernameValue, err := apiString(result, UsernameField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set(GroupIDField, result[GroupIDField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(KeyEnabledField, keyEnabled); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	name := strings.ReplaceAll(nameValue, "'", "")
+	if err := d.Set(NameField, name); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	username := strings.ReplaceAll(usernameValue, "'", "")
+	if err := d.Set(UsernameField, username); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(SharedField, shared); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	// Secret values are deliberately not refreshed from API responses. This avoids
+	// copying echoed credentials into state; configured values remain unchanged.
 
 	return nil
 }

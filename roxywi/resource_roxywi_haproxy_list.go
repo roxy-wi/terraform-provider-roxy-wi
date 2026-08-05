@@ -135,12 +135,26 @@ func resourceHaproxyListRead(ctx context.Context, d *schema.ResourceData, m inte
 		return diag.FromErr(err)
 	}
 
-	d.Set(NameField, result[NameField])
-	d.Set(ServerIpField, result[ServerIpField])
-	d.Set(ActionField, result[ActionField])
-	d.Set(ColorField, result[ColorField])
-	d.Set(ContentField, result[ContentField])
-	d.Set(GroupIDField, intFromInterface(result[GroupIDField]))
+	if err := d.Set(NameField, result[NameField]); err != nil {
+
+		return diag.Errorf("set Terraform state: %v", err)
+
+	}
+	if err := d.Set(ServerIpField, result[ServerIpField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(ActionField, result[ActionField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(ColorField, result[ColorField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(ContentField, result[ContentField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(GroupIDField, intFromInterface(result[GroupIDField])); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
 
 	return nil
 }

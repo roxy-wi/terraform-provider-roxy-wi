@@ -195,13 +195,49 @@ func resourceServiceInstallationRead(ctx context.Context, d *schema.ResourceData
 		return diag.Errorf("unexpected response format, could not unmarshal: %s", string(resp))
 	}
 
-	// Extracting the data and ensuring they are set correctly
-	d.Set(AutoStart, intToBool(result[AutoStart].(float64)))
-	d.Set(Checker, intToBool(result[Checker].(float64)))
-	d.Set(Metrics, intToBool(result[Metrics].(float64)))
-	d.Set(Docker, intToBool(result[Docker].(float64)))
-	d.Set(ServerField, result[ServerField].(float64))
-	d.Set(Service, result[Service].(string))
+	autoStart, err := apiBool(result, AutoStart)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	checker, err := apiBool(result, Checker)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	metrics, err := apiBool(result, Metrics)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	docker, err := apiBool(result, Docker)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	serverID, err := apiInt(result, ServerField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	serviceName, err := apiString(result, Service)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set(AutoStart, autoStart); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(Checker, checker); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(Metrics, metrics); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(Docker, docker); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(ServerField, serverID); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(Service, serviceName); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
 
 	return nil
 }

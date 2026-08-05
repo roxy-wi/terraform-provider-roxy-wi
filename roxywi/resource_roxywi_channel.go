@@ -139,20 +139,28 @@ func resourceChannelRead(ctx context.Context, d *schema.ResourceData, m interfac
 	}
 
 	if receiverValue, ok := result[ReceiverField].(string); ok && receiverValue != "" {
-		d.Set(ReceiverField, receiverValue)
+		if err := d.Set(ReceiverField, receiverValue); err != nil {
+			return diag.Errorf("set Terraform state: %v", err)
+		}
 	}
 
 	if channelValue, ok := result[ChannelField].(string); ok && channelValue != "" {
 		channel := strings.ReplaceAll(channelValue, "'", "")
-		d.Set(ChannelField, channel)
+		if err := d.Set(ChannelField, channel); err != nil {
+			return diag.Errorf("set Terraform state: %v", err)
+		}
 	}
 
 	if groupIDValue, ok := result[GroupIDField].(float64); ok {
-		d.Set(GroupIDField, int(groupIDValue))
+		if err := d.Set(GroupIDField, int(groupIDValue)); err != nil {
+			return diag.Errorf("set Terraform state: %v", err)
+		}
 	}
 
 	if tokenValue, ok := result[TokenField].(string); ok && tokenValue != "" {
-		d.Set(TokenField, tokenValue)
+		if err := d.Set(TokenField, tokenValue); err != nil {
+			return diag.Errorf("set Terraform state: %v", err)
+		}
 	}
 
 	return nil

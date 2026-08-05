@@ -150,16 +150,31 @@ func resourceBackupS3Read(ctx context.Context, d *schema.ResourceData, m interfa
 		return diag.FromErr(err)
 	}
 
-	description := strings.ReplaceAll(result[DescriptionField].(string), "'", "")
+	descriptionValue, err := apiString(result, DescriptionField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	description := strings.ReplaceAll(descriptionValue, "'", "")
 
-	d.Set(S3Server, result[S3Server])
-	d.Set(DescriptionField, description)
-	d.Set(AccessKey, result[AccessKey])
-	d.Set(SecretKey, result[SecretKey])
-	d.Set(Bucket, result[Bucket])
-	d.Set(ServerField, result[ServerField])
-	d.Set(TimeField, result[TimeField])
-	d.Set(DescriptionField, result[DescriptionField])
+	if err := d.Set(S3Server, result[S3Server]); err != nil {
+
+		return diag.Errorf("set Terraform state: %v", err)
+
+	}
+	if err := d.Set(DescriptionField, description); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(Bucket, result[Bucket]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(ServerField, result[ServerField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(TimeField, result[TimeField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	// Credentials are deliberately not refreshed from API responses. This keeps
+	// echoed secrets out of state while preserving configured values.
 
 	return nil
 }

@@ -183,24 +183,31 @@ func getListenerByName(ctx context.Context, client *Client, name string) (map[st
 }
 
 func setResourceDataFromResult(d *schema.ResourceData, result map[string]interface{}) error {
-	id, ok := result[ListenerIdField].(float64)
-	if !ok {
-		return fmt.Errorf("Invalid ID type for listener")
+	id, err := apiInt(result, ListenerIdField)
+	if err != nil {
+		return err
 	}
-	d.SetId(fmt.Sprintf("%d", int(id)))
+	d.SetId(fmt.Sprintf("%d", id))
 
-	setField(d, CheckEnabledField, result[CheckEnabledField])
-	setField(d, ClusterIdField, result[ClusterIdField])
-	setField(d, DelayBeforeRetryField, result[DelayBeforeRetryField])
-	setField(d, DelayLoopField, result[DelayLoopField])
-	setField(d, DescriptionField, result[DescriptionField])
-	setField(d, RetryField, result[RetryField])
-	setField(d, ServerIdField, result[ServerIdField])
-	setField(d, VIPField, result[VIPField])
-	setField(d, LbAlgorithmField, result[LbAlgorithmField])
-	setField(d, NameField, strings.Trim(fmt.Sprintf("%v", result[NameField]), "'\""))
-	setField(d, PortField, result[PortField])
-	setField(d, GroupIdField, result[GroupIdField])
+	fields := map[string]interface{}{
+		CheckEnabledField:     result[CheckEnabledField],
+		ClusterIdField:        result[ClusterIdField],
+		DelayBeforeRetryField: result[DelayBeforeRetryField],
+		DelayLoopField:        result[DelayLoopField],
+		DescriptionField:      result[DescriptionField],
+		RetryField:            result[RetryField],
+		ServerIdField:         result[ServerIdField],
+		VIPField:              result[VIPField],
+		LbAlgorithmField:      result[LbAlgorithmField],
+		NameField:             strings.Trim(fmt.Sprintf("%v", result[NameField]), "'\""),
+		PortField:             result[PortField],
+		GroupIdField:          result[GroupIdField],
+	}
+	for field, value := range fields {
+		if err := setField(d, field, value); err != nil {
+			return fmt.Errorf("set UDP listener field %q: %w", field, err)
+		}
+	}
 
 	configStr, ok := result["config"].(string)
 	if !ok || configStr == "" {
@@ -249,20 +256,19 @@ func setResourceDataFromResult(d *schema.ResourceData, result map[string]interfa
 	return d.Set(ConfigField, configSet)
 }
 
-func setField(d *schema.ResourceData, field string, value interface{}) {
+func setField(d *schema.ResourceData, field string, value interface{}) error {
 	if value == nil {
-		d.Set(field, "")
-		return
+		return d.Set(field, "")
 	}
 	switch v := value.(type) {
 	case float64:
-		d.Set(field, int(v))
+		return d.Set(field, int(v))
 	case int, int32, int64:
-		d.Set(field, v)
+		return d.Set(field, v)
 	case string:
-		d.Set(field, v)
+		return d.Set(field, v)
 	default:
-		d.Set(field, v)
+		return d.Set(field, v)
 	}
 }
 
@@ -270,8 +276,12 @@ func convertToInt(value interface{}) int {
 	switch v := value.(type) {
 	case float64:
 		return int(v)
-	case int, int32, int64:
-		return v.(int)
+	case int:
+		return v
+	case int32:
+		return int(v)
+	case int64:
+		return int(v)
 	default:
 		return 0
 	}

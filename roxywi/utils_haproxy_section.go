@@ -244,11 +244,11 @@ func getSetMap(d *schema.ResourceData, fieldName string) (map[string]interface{}
 	v := d.Get(fieldName)
 
 	set, ok := v.(*schema.Set)
-	if set.Len() == 0 {
-		return nil, nil
-	}
 	if !ok {
 		return nil, fmt.Errorf("field %s is not a valid Set", fieldName)
+	}
+	if set.Len() == 0 {
+		return nil, nil
 	}
 
 	if timeoutMap, ok := set.List()[0].(map[string]interface{}); ok {

@@ -142,10 +142,20 @@ func resourceHaproxySectionUserlistRead(ctx context.Context, d *schema.ResourceD
 		return diag.FromErr(err)
 	}
 
-	d.Set(NameField, result[NameField])
-	d.Set(ServerIdField, intFromInterface(result[ServerIdField]))
-	d.Set(UserListField, result[UserListField])
-	d.Set(UserListGroup, result[UserListGroup])
+	if err := d.Set(NameField, result[NameField]); err != nil {
+
+		return diag.Errorf("set Terraform state: %v", err)
+
+	}
+	if err := d.Set(ServerIdField, intFromInterface(result[ServerIdField])); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(UserListField, result[UserListField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(UserListGroup, result[UserListGroup]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
 
 	config, err := parseConfig(result["userlist_users"])
 	if err != nil {
@@ -153,7 +163,9 @@ func resourceHaproxySectionUserlistRead(ctx context.Context, d *schema.ResourceD
 	}
 
 	configList := parseUserListConfigListResult(config)
-	d.Set(ConfigField, configList)
+	if err := d.Set(ConfigField, configList); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
 
 	return nil
 }

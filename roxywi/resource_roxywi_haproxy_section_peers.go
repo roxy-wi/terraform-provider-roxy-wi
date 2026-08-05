@@ -130,9 +130,17 @@ func resourceHaproxySectionPeersRead(ctx context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 
-	d.Set(NameField, result[NameField])
-	d.Set(ServerIdField, intFromInterface(result[ServerIdField]))
-	d.Set(PeersField, result[PeersField])
+	if err := d.Set(NameField, result[NameField]); err != nil {
+
+		return diag.Errorf("set Terraform state: %v", err)
+
+	}
+	if err := d.Set(ServerIdField, intFromInterface(result[ServerIdField])); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(PeersField, result[PeersField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
 
 	config, err := parseConfig(result["peers"])
 	if err != nil {
@@ -140,7 +148,9 @@ func resourceHaproxySectionPeersRead(ctx context.Context, d *schema.ResourceData
 	}
 
 	configList := parsePeersConfigListResult(config)
-	d.Set(ConfigField, configList)
+	if err := d.Set(ConfigField, configList); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
 
 	return nil
 }

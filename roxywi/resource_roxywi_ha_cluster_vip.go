@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"time"
 )
 
 func resourceHaClusterVip() *schema.Resource {
@@ -113,12 +115,12 @@ func resourceHaClusterVipCreate(ctx context.Context, d *schema.ResourceData, m i
 		return diag.FromErr(err)
 	}
 
-	id, ok := result["id"].(float64)
-	if !ok {
-		return diag.Errorf("unable to find ID in response: %v", result)
+	id, err := apiInt(result, "id")
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
-	d.SetId(fmt.Sprintf("%d-vip-%d", clusterId, int(id)))
+	d.SetId(fmt.Sprintf("%d-vip-%d", clusterId, id))
 	return resourceHaClusterVipRead(ctx, d, m)
 }
 
@@ -147,12 +149,45 @@ func resourceHaClusterVipRead(ctx context.Context, d *schema.ResourceData, m int
 	}
 	serversResult := parseServersResult(servers)
 
-	d.Set(ClusterIdField, clusterId)
-	d.Set(ReturnToMasterField, intToBool(result[ReturnToMasterField].(float64)))
-	d.Set(ServersField, serversResult)
-	d.Set(UseSrcField, intToBool(result[UseSrcField].(float64)))
-	d.Set(VIPField, result[VIPField])
-	d.Set(VirtServerField, intToBool(result[VirtServerField].(float64)))
+	clusterIDValue, err := strconv.Atoi(clusterId)
+	if err != nil {
+		return diag.Errorf("invalid cluster ID %q: %v", clusterId, err)
+	}
+	returnToMaster, err := apiBool(result, ReturnToMasterField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	useSource, err := apiBool(result, UseSrcField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	virtualServer, err := apiBool(result, VirtServerField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	vip, err := apiString(result, VIPField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set(ClusterIdField, clusterIDValue); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(ReturnToMasterField, returnToMaster); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(ServersField, serversResult); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(UseSrcField, useSource); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(VIPField, vip); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(VirtServerField, virtualServer); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
 
 	return nil
 }

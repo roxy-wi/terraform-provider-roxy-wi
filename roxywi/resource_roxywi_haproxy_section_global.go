@@ -130,16 +130,38 @@ func resourceHaproxySectionGlobalRead(ctx context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 
-	d.Set(MaxconnFiled, intFromInterface(result[MaxconnFiled]))
-	d.Set(ServerIdField, intFromInterface(result[ServerIdField]))
-	d.Set(LogField, result[LogField])
-	d.Set(SocketFiled, result[SocketFiled])
-	d.Set(OptionFiled, result[OptionFiled])
-	d.Set(PidFileFiled, result[PidFileFiled])
-	d.Set(DaemonField, result[DaemonField])
-	d.Set(UserFiled, result[UserFiled])
-	d.Set(GroupNameField, result[GroupNameField])
-	d.Set(ChrootField, result[ChrootField])
+	if err := d.Set(MaxconnFiled, intFromInterface(result[MaxconnFiled])); err != nil {
+
+		return diag.Errorf("set Terraform state: %v", err)
+
+	}
+	if err := d.Set(ServerIdField, intFromInterface(result[ServerIdField])); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(LogField, result[LogField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(SocketFiled, result[SocketFiled]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(OptionFiled, result[OptionFiled]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(PidFileFiled, result[PidFileFiled]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(DaemonField, result[DaemonField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(UserFiled, result[UserFiled]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(GroupNameField, result[GroupNameField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(ChrootField, result[ChrootField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
 
 	return nil
 }

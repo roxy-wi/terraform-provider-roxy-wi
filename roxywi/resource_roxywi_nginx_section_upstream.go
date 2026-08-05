@@ -132,10 +132,20 @@ func resourceNginxSectionUpstreamRead(ctx context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 
-	d.Set(NameField, result[NameField])
-	d.Set(BalanceField, result[BalanceField])
-	d.Set(ServerIdField, intFromInterface(result[ServerIdField]))
-	d.Set(NginxKeepAlive, intFromInterface(result[NginxKeepAlive]))
+	if err := d.Set(NameField, result[NameField]); err != nil {
+
+		return diag.Errorf("set Terraform state: %v", err)
+
+	}
+	if err := d.Set(BalanceField, result[BalanceField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(ServerIdField, intFromInterface(result[ServerIdField])); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(NginxKeepAlive, intFromInterface(result[NginxKeepAlive])); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
 
 	backendServers, err := parseConfig(result[BackendServersField])
 	if err != nil {
@@ -143,7 +153,9 @@ func resourceNginxSectionUpstreamRead(ctx context.Context, d *schema.ResourceDat
 	}
 
 	backendServersList := parseNginxBackendServerResult(backendServers)
-	d.Set(BackendServersField, backendServersList)
+	if err := d.Set(BackendServersField, backendServersList); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
 
 	return nil
 }

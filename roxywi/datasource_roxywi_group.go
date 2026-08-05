@@ -68,11 +68,15 @@ func readGroupByID(ctx context.Context, d *schema.ResourceData, client *Client, 
 	}
 
 	if name, ok := result[NameField].(string); ok {
-		d.Set(NameField, name)
+		if err := d.Set(NameField, name); err != nil {
+			return diag.Errorf("set group name: %v", err)
+		}
 	}
 
 	if description, ok := result[DescriptionField].(string); ok {
-		d.Set(DescriptionField, description)
+		if err := d.Set(DescriptionField, description); err != nil {
+			return diag.Errorf("set group description: %v", err)
+		}
 	}
 
 	d.SetId(id)
@@ -95,10 +99,14 @@ func readGroupByName(ctx context.Context, d *schema.ResourceData, client *Client
 		if groupName, ok := group[NameField].(string); ok && groupName == name {
 			if id, ok := group["group_id"].(float64); ok {
 				d.SetId(fmt.Sprintf("%d", int(id)))
-				d.Set(NameField, groupName)
+				if err := d.Set(NameField, groupName); err != nil {
+					return diag.Errorf("set group name: %v", err)
+				}
 
 				if description, ok := group[DescriptionField].(string); ok {
-					d.Set(DescriptionField, description)
+					if err := d.Set(DescriptionField, description); err != nil {
+						return diag.Errorf("set group description: %v", err)
+					}
 				}
 
 				return nil

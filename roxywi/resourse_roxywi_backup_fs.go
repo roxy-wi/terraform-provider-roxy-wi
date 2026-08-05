@@ -139,15 +139,35 @@ func resourceBackupFsRead(ctx context.Context, d *schema.ResourceData, m interfa
 		return diag.FromErr(err)
 	}
 
-	description := strings.ReplaceAll(result[DescriptionField].(string), "'", "")
+	descriptionValue, err := apiString(result, DescriptionField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	description := strings.ReplaceAll(descriptionValue, "'", "")
 
-	d.Set(CredIDField, result[CredIDField])
-	d.Set(DescriptionField, description)
-	d.Set(RPathField, result[RPathField])
-	d.Set(RServerField, result[RServerField])
-	d.Set(ServerField, result[ServerField])
-	d.Set(TimeField, result[TimeField])
-	d.Set(TypeField, result[TypeField])
+	if err := d.Set(CredIDField, result[CredIDField]); err != nil {
+
+		return diag.Errorf("set Terraform state: %v", err)
+
+	}
+	if err := d.Set(DescriptionField, description); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(RPathField, result[RPathField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(RServerField, result[RServerField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(ServerField, result[ServerField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(TimeField, result[TimeField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(TypeField, result[TypeField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
 
 	return nil
 }

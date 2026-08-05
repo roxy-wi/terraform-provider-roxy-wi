@@ -335,23 +335,59 @@ func resourceHaproxySectionListenRead(ctx context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 
-	d.Set(NameField, result[NameField])
-	d.Set(BalanceField, result[BalanceField])
-	d.Set(ServerIdField, intFromInterface(result[ServerIdField]))
-	d.Set(BlacklistField, result[BlacklistField])
-	d.Set(WhitelistField, result[WhitelistField])
-	d.Set(ModeField, result[ModeField])
-	d.Set(CacheField, result[CacheField])
-	d.Set(CompressionField, result[CompressionField])
-	d.Set(ForwardForField, result[ForwardForField])
-	d.Set(SslOffloadingField, result[SslOffloadingField])
-	d.Set(Http2Field, result[Http2Field])
-	d.Set(SlowAttackField, result[SlowAttackField])
-	d.Set(AntiBotField, result[AntiBotField])
-	d.Set(DdosField, result[DdosField])
-	d.Set(WafField, result[WafField])
-	d.Set(RedisPatchField, result[RedisPatchField])
-	d.Set(MaxconnFiled, result[MaxconnFiled])
+	if err := d.Set(NameField, result[NameField]); err != nil {
+
+		return diag.Errorf("set Terraform state: %v", err)
+
+	}
+	if err := d.Set(BalanceField, result[BalanceField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(ServerIdField, intFromInterface(result[ServerIdField])); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(BlacklistField, result[BlacklistField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(WhitelistField, result[WhitelistField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(ModeField, result[ModeField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(CacheField, result[CacheField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(CompressionField, result[CompressionField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(ForwardForField, result[ForwardForField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(SslOffloadingField, result[SslOffloadingField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(Http2Field, result[Http2Field]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(SlowAttackField, result[SlowAttackField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(AntiBotField, result[AntiBotField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(DdosField, result[DdosField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(WafField, result[WafField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(RedisPatchField, result[RedisPatchField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(MaxconnFiled, result[MaxconnFiled]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
 
 	if err = setTimeoutField(d, CircuitBreakingField, result[CircuitBreakingField]); err != nil {
 		return diag.Errorf("set %s: %v", CircuitBreakingField, err)
@@ -393,10 +429,18 @@ func resourceHaproxySectionListenRead(ctx context.Context, d *schema.ResourceDat
 	backendServersList := parseBackendServerResult(backendServers)
 	acls := parseAclsServerResult(acl)
 	headers := parseHeadersResult(header)
-	d.Set(BindsField, bindsList)
-	d.Set(BackendServersField, backendServersList)
-	d.Set(AclsField, acls)
-	d.Set(HeadersField, headers)
+	if err := d.Set(BindsField, bindsList); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(BackendServersField, backendServersList); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(AclsField, acls); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(HeadersField, headers); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
 
 	_ = setTimeoutField(d, CircuitBreakingField, result[CircuitBreakingField])
 

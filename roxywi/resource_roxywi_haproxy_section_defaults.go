@@ -150,12 +150,26 @@ func resourceHaproxySectionDefaultsRead(ctx context.Context, d *schema.ResourceD
 		return diag.Errorf("set %s: %v", TimeoutField, err)
 	}
 
-	d.Set(MaxconnFiled, intFromInterface(result[MaxconnFiled]))
-	d.Set(ServerIdField, intFromInterface(result[ServerIdField]))
-	d.Set(RetriesFiled, intFromInterface(result[RetriesFiled]))
-	d.Set(LogField, result[LogField])
-	d.Set(OptionFiled, result[OptionFiled])
-	d.Set(ActionField, result[ActionField])
+	if err := d.Set(MaxconnFiled, intFromInterface(result[MaxconnFiled])); err != nil {
+
+		return diag.Errorf("set Terraform state: %v", err)
+
+	}
+	if err := d.Set(ServerIdField, intFromInterface(result[ServerIdField])); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(RetriesFiled, intFromInterface(result[RetriesFiled])); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(LogField, result[LogField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(OptionFiled, result[OptionFiled]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(ActionField, result[ActionField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
 
 	return nil
 }

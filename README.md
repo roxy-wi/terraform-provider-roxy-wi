@@ -6,7 +6,7 @@ The Terraform Provider for Roxy-WI allows you to manage Roxy-WI resources such a
 ## Requirements
 
 - [Terraform](https://www.terraform.io/downloads.html) v1.7.0+
-- Go 1.22.5+ (to build the provider)
+- Go 1.26.5+ (to build the provider)
 
 ## Building The Provider
 
@@ -23,8 +23,10 @@ go build -o terraform-provider-roxywi
 Move the binary into the Terraform plugins directory:
 
 ```sh
-mkdir -p ~/.terraform.d/plugins/registry.terraform.io/Roxy-wi/roxywi/1.5.3/linux_amd64
-mv terraform-provider-roxywi ~/.terraform.d/plugins/registry.terraform.io/Roxy-wi/roxywi/1.5.3/linux_amd64/
+VERSION=1.5.5
+PLUGIN_DIR="$HOME/.terraform.d/plugins/registry.terraform.io/Roxy-wi/roxywi/${VERSION}/linux_amd64"
+mkdir -p "$PLUGIN_DIR"
+mv terraform-provider-roxywi "$PLUGIN_DIR/"
 ```
 
 ## Using The Provider
@@ -38,6 +40,10 @@ provider "roxywi" {
   password = "your-password"
 }
 ```
+
+## Security
+
+Fields marked as sensitive are hidden from Terraform CLI output, but Terraform Plugin SDK v2 still stores configured secret values in state. Use an encrypted remote state backend with strict access controls. See [Security guidance](./docs/security.md) for details.
 
 
 ## License

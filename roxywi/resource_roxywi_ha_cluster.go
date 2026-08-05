@@ -183,12 +183,12 @@ func resourceHaClusterCreate(ctx context.Context, d *schema.ResourceData, m inte
 		return diag.FromErr(err)
 	}
 
-	id, ok := result["id"].(float64)
-	if !ok {
-		return diag.Errorf("unable to find ID in response: %v", result)
+	id, err := apiInt(result, "id")
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
-	d.SetId(fmt.Sprintf("%d", int(id)))
+	d.SetId(fmt.Sprintf("%d", id))
 	return resourceHaClusterRead(ctx, d, m)
 }
 
@@ -218,19 +218,48 @@ func resourceHaClusterRead(ctx context.Context, d *schema.ResourceData, m interf
 	}
 	serversResult := parseServersResult(servers)
 
-	description := strings.ReplaceAll(result[DescriptionField].(string), "'", "")
-	name := strings.ReplaceAll(result[NameField].(string), "'", "")
+	descriptionValue, err := apiString(result, DescriptionField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	nameValue, err := apiString(result, NameField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	returnToMaster, err := apiBool(result, ReturnToMasterField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	synFlood, err := apiBool(result, SynFloodField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	useSource, err := apiBool(result, UseSrcField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	virtualServer, err := apiBool(result, VirtServerField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	vip, err := apiString(result, VIPField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	description := strings.ReplaceAll(descriptionValue, "'", "")
+	name := strings.ReplaceAll(nameValue, "'", "")
 
 	state := map[string]interface{}{
 		DescriptionField:    description,
 		NameField:           name,
-		ReturnToMasterField: intFromInterface(result[ReturnToMasterField]) == 1,
+		ReturnToMasterField: returnToMaster,
 		ServersField:        serversResult,
 		ServicesField:       servicesList,
-		SynFloodField:       intFromInterface(result[SynFloodField]) == 1,
-		UseSrcField:         intFromInterface(result[UseSrcField]) == 1,
-		VIPField:            result[VIPField],
-		VirtServerField:     intFromInterface(result[VirtServerField]) == 1,
+		SynFloodField:       synFlood,
+		UseSrcField:         useSource,
+		VIPField:            vip,
+		VirtServerField:     virtualServer,
 	}
 	for field, value := range state {
 		if err := d.Set(field, value); err != nil {
@@ -253,10 +282,18 @@ func flattenHAServices(value interface{}) ([]map[string]interface{}, error) {
 		if !ok {
 			return nil, fmt.Errorf("unexpected service %q value in HA cluster response: %T", serviceName, serviceDetails)
 		}
+		docker, err := apiBool(serviceData, DockerField)
+		if err != nil {
+			return nil, fmt.Errorf("service %q: %w", serviceName, err)
+		}
+		enabled, err := apiBool(serviceData, EnabledField)
+		if err != nil {
+			return nil, fmt.Errorf("service %q: %w", serviceName, err)
+		}
 		servicesList = append(servicesList, map[string]interface{}{
 			NameField:    serviceName,
-			DockerField:  intFromInterface(serviceData[DockerField]) == 1,
-			EnabledField: intFromInterface(serviceData[EnabledField]) == 1,
+			DockerField:  docker,
+			EnabledField: enabled,
 		})
 	}
 	sort.Slice(servicesList, func(i, j int) bool {

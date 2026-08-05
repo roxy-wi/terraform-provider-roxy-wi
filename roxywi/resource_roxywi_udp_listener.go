@@ -187,12 +187,12 @@ func resourceUdpListenerCreate(ctx context.Context, d *schema.ResourceData, m in
 		return diag.FromErr(err)
 	}
 
-	id, ok := result["id"].(float64)
-	if !ok {
-		return diag.Errorf("unable to find ID in response: %v", result)
+	id, err := apiInt(result, "id")
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
-	d.SetId(fmt.Sprintf("%d", int(id)))
+	d.SetId(fmt.Sprintf("%d", id))
 	return resourceUdpListenerRead(ctx, d, m)
 }
 
@@ -210,17 +210,64 @@ func resourceUdpListenerRead(ctx context.Context, d *schema.ResourceData, m inte
 		return diag.FromErr(err)
 	}
 
-	d.Set(ClusterIdField, intFromInterface(result[ClusterIdField]))
-	description := strings.ReplaceAll(result[DescriptionField].(string), "'", "")
-	name := strings.ReplaceAll(result[NameField].(string), "'", "")
-	d.Set(DescriptionField, description)
-	d.Set(NameField, name)
-	d.Set(GroupIdField, intFromInterface(result[GroupIdField]))
-	d.Set(LbAlgorithmField, result[LbAlgorithmField])
-	d.Set(PortField, intFromInterface(result[PortField]))
-	d.Set(ServerIdField, intFromInterface(result[ServerIdField]))
-	d.Set(VIPField, result[VIPField])
-	d.Set(IsCheckerFileld, intToBool(result[IsCheckerFileld].(float64)))
+	clusterID, err := apiInt(result, ClusterIdField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	groupID, err := apiInt(result, GroupIdField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	port, err := apiInt(result, PortField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	serverID, err := apiInt(result, ServerIdField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	descriptionValue, err := apiString(result, DescriptionField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	nameValue, err := apiString(result, NameField)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	isChecker, err := apiBool(result, IsCheckerFileld)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set(ClusterIdField, clusterID); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	description := strings.ReplaceAll(descriptionValue, "'", "")
+	name := strings.ReplaceAll(nameValue, "'", "")
+	if err := d.Set(DescriptionField, description); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(NameField, name); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(GroupIdField, groupID); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(LbAlgorithmField, result[LbAlgorithmField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(PortField, port); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(ServerIdField, serverID); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(VIPField, result[VIPField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(IsCheckerFileld, isChecker); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
 
 	config, err := parseConfig(result["config"])
 	if err != nil {
@@ -228,7 +275,9 @@ func resourceUdpListenerRead(ctx context.Context, d *schema.ResourceData, m inte
 	}
 
 	configList := parseConfigResult(config)
-	d.Set(ConfigField, configList)
+	if err := d.Set(ConfigField, configList); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
 
 	return nil
 }

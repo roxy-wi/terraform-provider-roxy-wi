@@ -135,13 +135,29 @@ func resourceLetsencryptRead(ctx context.Context, d *schema.ResourceData, m inte
 		return diag.FromErr(err)
 	}
 
-	d.Set(DescriptionField, result[DescriptionField])
-	d.Set(ServerIdField, intFromInterface(result[ServerIdField]))
-	d.Set(DomainsField, result[DomainsField])
-	d.Set(ApiTokenField, result[ApiTokenField])
-	d.Set(ApiKeyField, result[ApiKeyField])
-	d.Set(EmailField, result[EmailField])
-	d.Set(TypeField, result[TypeField])
+	if err := d.Set(DescriptionField, result[DescriptionField]); err != nil {
+
+		return diag.Errorf("set Terraform state: %v", err)
+
+	}
+	if err := d.Set(ServerIdField, intFromInterface(result[ServerIdField])); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(DomainsField, result[DomainsField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(ApiTokenField, result[ApiTokenField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(ApiKeyField, result[ApiKeyField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(EmailField, result[EmailField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
+	if err := d.Set(TypeField, result[TypeField]); err != nil {
+		return diag.Errorf("set Terraform state: %v", err)
+	}
 
 	return nil
 }

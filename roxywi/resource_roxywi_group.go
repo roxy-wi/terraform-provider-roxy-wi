@@ -87,11 +87,15 @@ func resourceGroupRead(ctx context.Context, d *schema.ResourceData, m interface{
 	}
 
 	if name, ok := result[NameField].(string); ok {
-		d.Set(NameField, name)
+		if err := d.Set(NameField, name); err != nil {
+			return diag.Errorf("set Terraform state: %v", err)
+		}
 	}
 
 	if description, ok := result[DescriptionField].(string); ok {
-		d.Set(DescriptionField, description)
+		if err := d.Set(DescriptionField, description); err != nil {
+			return diag.Errorf("set Terraform state: %v", err)
+		}
 	}
 
 	return nil

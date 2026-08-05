@@ -34,8 +34,12 @@ func parseConfig(config interface{}) ([]map[string]interface{}, error) {
 		return parsedConfig, nil
 	case []interface{}:
 		var parsedConfig []map[string]interface{}
-		for _, item := range v {
-			parsedConfig = append(parsedConfig, item.(map[string]interface{}))
+		for index, item := range v {
+			configItem, ok := item.(map[string]interface{})
+			if !ok {
+				return nil, fmt.Errorf("invalid config item at index %d: expected an object, got %T", index, item)
+			}
+			parsedConfig = append(parsedConfig, configItem)
 		}
 		return parsedConfig, nil
 	default:
