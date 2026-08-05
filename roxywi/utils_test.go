@@ -1,7 +1,9 @@
 package roxywi
 
 import (
+	"context"
 	"encoding/json"
+	"net/http"
 	"strings"
 	"testing"
 
@@ -106,5 +108,62 @@ func TestConvertToIntSupportsIntegerWidths(t *testing.T) {
 		if got := convertToInt(test.value); got != test.want {
 			t.Fatalf("convertToInt(%T(%v)) = %d, want %d", test.value, test.value, got, test.want)
 		}
+	}
+}
+
+func TestIdentifierParsers(t *testing.T) {
+	first, second, err := resourceParseId("12-vip-34", "-vip-")
+	if err != nil || first != "12" || second != "34" {
+		t.Fatalf("resourceParseId returned %q, %q, %v", first, second, err)
+	}
+	if _, _, err := resourceParseId("invalid", "-vip-"); err == nil {
+		t.Fatal("expected invalid resource ID to fail")
+	}
+
+	serverID, section, err := resourceSectionParseId("7-api-backend")
+	if err != nil || serverID != "7" || section != "api-backend" {
+		t.Fatalf("resourceSectionParseId returned %q, %q, %v", serverID, section, err)
+	}
+	if _, _, err := resourceSectionParseId("invalid"); err == nil {
+		t.Fatal("expected invalid section ID to fail")
+	}
+}
+
+func TestBoolAndEmailUtilities(t *testing.T) {
+	if boolToInt(true) != 1 || boolToInt(false) != 0 {
+		t.Fatal("boolToInt returned an unexpected value")
+	}
+	if _, errors := validateEmail("user@example.com", UserEmailField); len(errors) != 0 {
+		t.Fatalf("valid email was rejected: %v", errors)
+	}
+	if _, errors := validateEmail("not-an-email", UserEmailField); len(errors) == 0 {
+		t.Fatal("invalid email was accepted")
+	}
+}
+
+func TestCheckVIPExists(t *testing.T) {
+	config := newTestConfig(t, func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/ha/cluster/3/vips":
+			writeTestJSON(t, w, []map[string]interface{}{{VIPField: "192.0.2.10"}})
+		case "/api/server/4/ip":
+			writeTestJSON(t, w, []string{"192.0.2.20"})
+		default:
+			t.Errorf("unexpected path %s", r.URL.Path)
+			http.Error(w, "unexpected request", http.StatusBadRequest)
+		}
+	})
+
+	if err := checkVipExists(context.Background(), config.Client, 3, 0, "192.0.2.10"); err != nil {
+		t.Fatalf("cluster VIP was not found: %v", err)
+	}
+	if err := checkVipExists(context.Background(), config.Client, 0, 4, "192.0.2.20"); err != nil {
+		t.Fatalf("server VIP was not found: %v", err)
+	}
+	if err := checkVipExists(context.Background(), config.Client, 3, 0, "192.0.2.99"); err == nil {
+		t.Fatal("expected a missing cluster VIP error")
+	}
+	if err := checkVipExists(context.Background(), config.Client, 0, 0, "192.0.2.10"); err == nil {
+		t.Fatal("expected missing cluster/server IDs to fail")
 	}
 }

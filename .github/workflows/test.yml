@@ -32,7 +32,7 @@ jobs:
         run: go test -race -coverprofile=coverage.out ./...
       - name: Enforce coverage floor
         env:
-          MIN_COVERAGE: "8.0"
+          MIN_COVERAGE: "20.0"
         run: |
           coverage="$(go tool cover -func=coverage.out | awk '/^total:/ {gsub("%", "", $3); print $3}')"
           echo "Total coverage: ${coverage}%"
