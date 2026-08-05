@@ -20,10 +20,10 @@ const (
 
 func resourceSSHCredential() *schema.Resource {
 	return &schema.Resource{
-		CreateWithoutTimeout: resourceSSHCredentialCreate,
-		ReadWithoutTimeout:   resourceSSHCredentialRead,
-		UpdateWithoutTimeout: resourceSSHCredentialUpdate,
-		DeleteWithoutTimeout: resourceSSHCredentialDelete,
+		CreateContext: resourceSSHCredentialCreate,
+		ReadContext:   resourceSSHCredentialRead,
+		UpdateContext: resourceSSHCredentialUpdate,
+		DeleteContext: resourceSSHCredentialDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -67,11 +67,13 @@ func resourceSSHCredential() *schema.Resource {
 			PassPhraseField: {
 				Type:        schema.TypeString,
 				Optional:    true,
+				Sensitive:   true,
 				Description: "Passphrase for the SSH credentials.",
 			},
 			PrivateKeyField: {
 				Type:        schema.TypeString,
 				Optional:    true,
+				Sensitive:   true,
 				Description: "Private key in Base64 for the SSH credentials. Only ecdsa and rsa is supported.",
 			},
 			SharedField: {
@@ -115,7 +117,7 @@ func resourceSSHCredentialCreate(ctx context.Context, d *schema.ResourceData, m 
 		SharedField:     boolToInt(d.Get(SharedField).(bool)),
 	}
 
-	resp, err := client.doRequest("POST", "/api/server/cred", sshCred)
+	resp, err := client.doRequest(ctx, "POST", "/api/server/cred", sshCred)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -145,7 +147,7 @@ func resourceSSHCredentialCreate(ctx context.Context, d *schema.ResourceData, m 
 			patchData[PrivateKeyField] = d.Get(PrivateKeyField).(string)
 		}
 
-		resp, err := client.doRequest("PATCH", fmt.Sprintf("/api/server/cred/%s", d.Id()), patchData)
+		resp, err := client.doRequest(ctx, "PATCH", fmt.Sprintf("/api/server/cred/%s", d.Id()), patchData)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -162,9 +164,9 @@ func resourceSSHCredentialRead(ctx context.Context, d *schema.ResourceData, m in
 	client := m.(*Config).Client
 	id := d.Id()
 
-	resp, err := client.doRequest("GET", fmt.Sprintf("/api/server/cred/%s", id), nil)
+	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("/api/server/cred/%s", id), nil)
 	if err != nil {
-		return diag.FromErr(err)
+		return readDiagnostics(d, err)
 	}
 
 	var resultArray []map[string]interface{}
@@ -212,7 +214,7 @@ func resourceSSHCredentialUpdate(ctx context.Context, d *schema.ResourceData, m 
 		sshCred[PrivateKeyField] = privateKey
 	}
 
-	resp, err := client.doRequest("PUT", fmt.Sprintf("/api/server/cred/%s", id), sshCred)
+	resp, err := client.doRequest(ctx, "PUT", fmt.Sprintf("/api/server/cred/%s", id), sshCred)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -229,7 +231,7 @@ func resourceSSHCredentialUpdate(ctx context.Context, d *schema.ResourceData, m 
 			}
 
 			if len(patchData) > 0 {
-				resp, err := client.doRequest("PATCH", fmt.Sprintf("/api/server/cred/%s", d.Id()), patchData)
+				resp, err := client.doRequest(ctx, "PATCH", fmt.Sprintf("/api/server/cred/%s", d.Id()), patchData)
 				if err != nil {
 					return diag.FromErr(err)
 				}
@@ -259,7 +261,7 @@ func resourceSSHCredentialDelete(ctx context.Context, d *schema.ResourceData, m 
 	client := m.(*Config).Client
 	id := d.Id()
 
-	resp, err := client.doRequest("DELETE", fmt.Sprintf("/api/server/cred/%s", id), nil)
+	resp, err := client.doRequest(ctx, "DELETE", fmt.Sprintf("/api/server/cred/%s", id), nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

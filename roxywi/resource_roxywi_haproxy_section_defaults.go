@@ -24,9 +24,9 @@ const (
 
 func resourceHaproxySectionDefaults() *schema.Resource {
 	return &schema.Resource{
-		ReadWithoutTimeout:   resourceHaproxySectionDefaultsRead,
-		UpdateWithoutTimeout: resourceHaproxySectionDefaultsUpdate,
-		DeleteWithoutTimeout: resourceHaproxySectionDefaultsDelete,
+		ReadContext:   resourceHaproxySectionDefaultsRead,
+		UpdateContext: resourceHaproxySectionDefaultsUpdate,
+		DeleteContext: resourceHaproxySectionDefaultsDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -136,9 +136,9 @@ func resourceHaproxySectionDefaultsRead(ctx context.Context, d *schema.ResourceD
 		return diag.FromErr(err)
 	}
 
-	resp, err := client.doRequest("GET", fmt.Sprintf("api/service/haproxy/%s/section/defaults", serverId), nil)
+	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("api/service/haproxy/%s/section/defaults", serverId), nil)
 	if err != nil {
-		return diag.FromErr(err)
+		return readDiagnostics(d, err)
 	}
 
 	var result map[string]interface{}
@@ -147,9 +147,7 @@ func resourceHaproxySectionDefaultsRead(ctx context.Context, d *schema.ResourceD
 	}
 
 	if err = setTimeoutField(d, "timeout", result["timeout"]); err != nil {
-		fmt.Println("Error:", err)
-	} else {
-		fmt.Println("Success:", d.Get("timeout"))
+		return diag.Errorf("set %s: %v", TimeoutField, err)
 	}
 
 	d.Set(MaxconnFiled, intFromInterface(result[MaxconnFiled]))
@@ -181,7 +179,7 @@ func resourceHaproxySectionDefaultsUpdate(ctx context.Context, d *schema.Resourc
 		TimeoutField:  timeouts,
 	}
 
-	_, err := client.doRequest("PUT", fmt.Sprintf("api/service/haproxy/%d/section/defaults", serverId), requestBody)
+	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("api/service/haproxy/%d/section/defaults", serverId), requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}

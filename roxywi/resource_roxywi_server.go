@@ -21,10 +21,10 @@ const (
 
 func resourceServer() *schema.Resource {
 	return &schema.Resource{
-		CreateWithoutTimeout: resourceServerCreate,
-		ReadWithoutTimeout:   resourceServerRead,
-		UpdateWithoutTimeout: resourceServerUpdate,
-		DeleteWithoutTimeout: resourceServerDelete,
+		CreateContext: resourceServerCreate,
+		ReadContext:   resourceServerRead,
+		UpdateContext: resourceServerUpdate,
+		DeleteContext: resourceServerDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -95,7 +95,7 @@ func resourceServerCreate(ctx context.Context, d *schema.ResourceData, m interfa
 		PortField:        d.Get(PortField).(int),
 	}
 
-	resp, err := client.doRequest("POST", "/api/server", server)
+	resp, err := client.doRequest(ctx, "POST", "/api/server", server)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -118,9 +118,9 @@ func resourceServerRead(ctx context.Context, d *schema.ResourceData, m interface
 	client := m.(*Config).Client
 	id := d.Id()
 
-	resp, err := client.doRequest("GET", fmt.Sprintf("/api/server/%s", id), nil)
+	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("/api/server/%s", id), nil)
 	if err != nil {
-		return diag.FromErr(err)
+		return readDiagnostics(d, err)
 	}
 
 	var result map[string]interface{}
@@ -158,7 +158,7 @@ func resourceServerUpdate(ctx context.Context, d *schema.ResourceData, m interfa
 		PortField:        d.Get(PortField).(int),
 	}
 
-	_, err := client.doRequest("PUT", fmt.Sprintf("/api/server/%s", id), server)
+	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("/api/server/%s", id), server)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -170,7 +170,7 @@ func resourceServerDelete(ctx context.Context, d *schema.ResourceData, m interfa
 	client := m.(*Config).Client
 	id := d.Id()
 
-	_, err := client.doRequest("DELETE", fmt.Sprintf("/api/server/%s", id), nil)
+	_, err := client.doRequest(ctx, "DELETE", fmt.Sprintf("/api/server/%s", id), nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

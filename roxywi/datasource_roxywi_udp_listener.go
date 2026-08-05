@@ -128,9 +128,9 @@ func dataSourceUdpListenerRead(ctx context.Context, d *schema.ResourceData, m in
 
 	switch {
 	case idExists:
-		result, err = getListenerByID(client, id.(string))
+		result, err = getListenerByID(ctx, client, id.(string))
 	case nameExists:
-		result, err = getListenerByName(client, name.(string))
+		result, err = getListenerByName(ctx, client, name.(string))
 	default:
 		return diag.Errorf("Either %s or %s must be specified", ListenerIdField, NameField)
 	}
@@ -146,8 +146,8 @@ func dataSourceUdpListenerRead(ctx context.Context, d *schema.ResourceData, m in
 	return nil
 }
 
-func getListenerByID(client *Client, id string) (map[string]interface{}, error) {
-	resp, err := client.doRequest("GET", fmt.Sprintf("/api/udp/listener/%s", id), nil)
+func getListenerByID(ctx context.Context, client *Client, id string) (map[string]interface{}, error) {
+	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("/api/udp/listener/%s", id), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -160,8 +160,8 @@ func getListenerByID(client *Client, id string) (map[string]interface{}, error) 
 	return result, nil
 }
 
-func getListenerByName(client *Client, name string) (map[string]interface{}, error) {
-	resp, err := client.doRequest("GET", "/api/udp/listeners", nil)
+func getListenerByName(ctx context.Context, client *Client, name string) (map[string]interface{}, error) {
+	resp, err := client.doRequest(ctx, "GET", "/api/udp/listeners", nil)
 	if err != nil {
 		return nil, err
 	}

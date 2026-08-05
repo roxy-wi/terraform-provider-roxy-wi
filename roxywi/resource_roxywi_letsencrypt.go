@@ -20,10 +20,10 @@ const (
 
 func resourceLetsencrypt() *schema.Resource {
 	return &schema.Resource{
-		CreateWithoutTimeout: resourceLetsencryptCreate,
-		ReadWithoutTimeout:   resourceLetsencryptRead,
-		UpdateWithoutTimeout: resourceLetsencryptUpdate,
-		DeleteWithoutTimeout: resourceLetsencryptDelete,
+		CreateContext: resourceLetsencryptCreate,
+		ReadContext:   resourceLetsencryptRead,
+		UpdateContext: resourceLetsencryptUpdate,
+		DeleteContext: resourceLetsencryptDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -102,7 +102,7 @@ func resourceLetsencryptCreate(ctx context.Context, d *schema.ResourceData, m in
 		TypeField:        d.Get(TypeField),
 	}
 
-	resp, err := client.doRequest("POST", "api/service/letsencrypt", requestBody)
+	resp, err := client.doRequest(ctx, "POST", "api/service/letsencrypt", requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -125,9 +125,9 @@ func resourceLetsencryptRead(ctx context.Context, d *schema.ResourceData, m inte
 	client := m.(*Config).Client
 	id := d.Id()
 
-	resp, err := client.doRequest("GET", fmt.Sprintf("api/service/letsencrypt/%s", id), nil)
+	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("api/service/letsencrypt/%s", id), nil)
 	if err != nil {
-		return diag.FromErr(err)
+		return readDiagnostics(d, err)
 	}
 
 	var result map[string]interface{}
@@ -160,7 +160,7 @@ func resourceLetsencryptUpdate(ctx context.Context, d *schema.ResourceData, m in
 		TypeField:        d.Get(TypeField),
 	}
 
-	_, err := client.doRequest("PUT", fmt.Sprintf("api/service/letsencrypt/%s", id), requestBody)
+	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("api/service/letsencrypt/%s", id), requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -172,7 +172,7 @@ func resourceLetsencryptDelete(ctx context.Context, d *schema.ResourceData, m in
 	client := m.(*Config).Client
 	id := d.Id()
 
-	_, err := client.doRequest("PUT", fmt.Sprintf("api/service/letsencrypt/%s", id), nil)
+	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("api/service/letsencrypt/%s", id), nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

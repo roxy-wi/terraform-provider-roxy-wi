@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
+	"strings"
+	"time"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"strings"
-	"time"
 )
 
 const (
@@ -25,10 +27,10 @@ const (
 
 func resourceHaCluster() *schema.Resource {
 	return &schema.Resource{
-		CreateWithoutTimeout: resourceHaClusterCreate,
-		ReadWithoutTimeout:   resourceHaClusterRead,
-		UpdateWithoutTimeout: resourceHaClusterUpdate,
-		DeleteWithoutTimeout: resourceHaClusterDelete,
+		CreateContext: resourceHaClusterCreate,
+		ReadContext:   resourceHaClusterRead,
+		UpdateContext: resourceHaClusterUpdate,
+		DeleteContext: resourceHaClusterDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -157,7 +159,6 @@ func resourceHaClusterCreate(ctx context.Context, d *schema.ResourceData, m inte
 	}
 
 	servers := parseServersList(d.Get(ServersField).([]interface{}))
-	fmt.Printf("Servers: %+v\n", servers)
 
 	haCluster := map[string]interface{}{
 		DescriptionField:    description,
@@ -172,10 +173,7 @@ func resourceHaClusterCreate(ctx context.Context, d *schema.ResourceData, m inte
 		ReconfigureField:    true,
 	}
 
-	jsonData, _ := json.Marshal(haCluster)
-	fmt.Printf("HA Cluster Data: %s\n", string(jsonData))
-
-	resp, err := client.doRequest("POST", "/api/ha/cluster", haCluster)
+	resp, err := client.doRequest(ctx, "POST", "/api/ha/cluster", haCluster)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -199,9 +197,9 @@ func resourceHaClusterRead(ctx context.Context, d *schema.ResourceData, m interf
 
 	id := d.Id()
 
-	resp, err := client.doRequest("GET", fmt.Sprintf("/api/ha/cluster/%s", id), nil)
+	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("/api/ha/cluster/%s", id), nil)
 	if err != nil {
-		return diag.FromErr(err)
+		return readDiagnostics(d, err)
 	}
 
 	var result map[string]interface{}
@@ -209,16 +207,9 @@ func resourceHaClusterRead(ctx context.Context, d *schema.ResourceData, m interf
 		return diag.FromErr(err)
 	}
 
-	servicesMap := result[ServicesField].(map[string]interface{})
-	var servicesList []map[string]interface{}
-
-	for serviceName, serviceDetails := range servicesMap {
-		serviceData := serviceDetails.(map[string]interface{})
-		servicesList = append(servicesList, map[string]interface{}{
-			NameField:    serviceName,
-			DockerField:  intToBool(serviceData[DockerField].(float64)),
-			EnabledField: intToBool(serviceData[EnabledField].(float64)),
-		})
+	servicesList, err := flattenHAServices(result[ServicesField])
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
 	servers, err := parseConfig(result[ServersField])
@@ -230,17 +221,48 @@ func resourceHaClusterRead(ctx context.Context, d *schema.ResourceData, m interf
 	description := strings.ReplaceAll(result[DescriptionField].(string), "'", "")
 	name := strings.ReplaceAll(result[NameField].(string), "'", "")
 
-	d.Set(DescriptionField, description)
-	d.Set(NameField, name)
-	d.Set(ReturnToMasterField, intToBool(result[ReturnToMasterField].(float64)))
-	d.Set(ServersField, serversResult)
-	d.Set(ServicesField, result[ServicesField])
-	d.Set(SynFloodField, intToBool(result[SynFloodField].(float64)))
-	d.Set(UseSrcField, intToBool(result[UseSrcField].(float64)))
-	d.Set(VIPField, result[VIPField])
-	d.Set(VirtServerField, intToBool(result[VirtServerField].(float64)))
+	state := map[string]interface{}{
+		DescriptionField:    description,
+		NameField:           name,
+		ReturnToMasterField: intFromInterface(result[ReturnToMasterField]) == 1,
+		ServersField:        serversResult,
+		ServicesField:       servicesList,
+		SynFloodField:       intFromInterface(result[SynFloodField]) == 1,
+		UseSrcField:         intFromInterface(result[UseSrcField]) == 1,
+		VIPField:            result[VIPField],
+		VirtServerField:     intFromInterface(result[VirtServerField]) == 1,
+	}
+	for field, value := range state {
+		if err := d.Set(field, value); err != nil {
+			return diag.Errorf("set HA cluster field %q: %v", field, err)
+		}
+	}
 
 	return nil
+}
+
+func flattenHAServices(value interface{}) ([]map[string]interface{}, error) {
+	servicesMap, ok := value.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("unexpected %s value in HA cluster response: %T", ServicesField, value)
+	}
+
+	servicesList := make([]map[string]interface{}, 0, len(servicesMap))
+	for serviceName, serviceDetails := range servicesMap {
+		serviceData, ok := serviceDetails.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("unexpected service %q value in HA cluster response: %T", serviceName, serviceDetails)
+		}
+		servicesList = append(servicesList, map[string]interface{}{
+			NameField:    serviceName,
+			DockerField:  intFromInterface(serviceData[DockerField]) == 1,
+			EnabledField: intFromInterface(serviceData[EnabledField]) == 1,
+		})
+	}
+	sort.Slice(servicesList, func(i, j int) bool {
+		return servicesList[i][NameField].(string) < servicesList[j][NameField].(string)
+	})
+	return servicesList, nil
 }
 
 func resourceHaClusterUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -264,7 +286,6 @@ func resourceHaClusterUpdate(ctx context.Context, d *schema.ResourceData, m inte
 	}
 
 	servers := parseServersList(d.Get(ServersField).([]interface{}))
-	fmt.Printf("Servers: %+v\n", servers)
 
 	haCluster := map[string]interface{}{
 		DescriptionField:    description,
@@ -278,14 +299,11 @@ func resourceHaClusterUpdate(ctx context.Context, d *schema.ResourceData, m inte
 		VirtServerField:     boolToInt(d.Get(VirtServerField).(bool)),
 	}
 
-	jsonData, _ := json.Marshal(haCluster)
-	fmt.Printf("HA Cluster Data: %s\n", string(jsonData))
-
 	if d.HasChange(ReturnToMasterField) || d.HasChange(ServersField) || d.HasChange(ServicesField) || d.HasChange(UseSrcField) || d.HasChange(VIPField) {
 		haCluster[ReconfigureField] = true
 	}
 
-	_, err := client.doRequest("PUT", fmt.Sprintf("/api/ha/cluster/%s", id), haCluster)
+	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("/api/ha/cluster/%s", id), haCluster)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -297,7 +315,7 @@ func resourceHaClusterDelete(ctx context.Context, d *schema.ResourceData, m inte
 	client := m.(*Config).Client
 	id := d.Id()
 
-	_, err := client.doRequest("DELETE", fmt.Sprintf("/api/ha/cluster/%s", id), nil)
+	_, err := client.doRequest(ctx, "DELETE", fmt.Sprintf("/api/ha/cluster/%s", id), nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

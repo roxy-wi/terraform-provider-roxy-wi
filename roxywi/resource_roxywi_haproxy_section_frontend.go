@@ -13,10 +13,10 @@ import (
 
 func resourceHaproxySectionFrontend() *schema.Resource {
 	return &schema.Resource{
-		CreateWithoutTimeout: resourceHaproxySectionFrontendCreate,
-		ReadWithoutTimeout:   resourceHaproxySectionFrontendRead,
-		UpdateWithoutTimeout: resourceHaproxySectionFrontendUpdate,
-		DeleteWithoutTimeout: resourceHaproxySectionFrontendDelete,
+		CreateContext: resourceHaproxySectionFrontendCreate,
+		ReadContext:   resourceHaproxySectionFrontendRead,
+		UpdateContext: resourceHaproxySectionFrontendUpdate,
+		DeleteContext: resourceHaproxySectionFrontendDelete,
 		CustomizeDiff: func(ctx context.Context, d *schema.ResourceDiff, m interface{}) error {
 			if err := validateModeAndOptions(d); err != nil {
 				return fmt.Errorf("error while validateModeAndOptions: %w", err)
@@ -212,7 +212,7 @@ func resourceHaproxySectionFrontendCreate(ctx context.Context, d *schema.Resourc
 		MaxconnFiled:       d.Get(MaxconnFiled),
 	}
 
-	resp, err := client.doRequest("POST", fmt.Sprintf("api/service/haproxy/%d/section/frontend", d.Get(ServerIdField)), requestBody)
+	resp, err := client.doRequest(ctx, "POST", fmt.Sprintf("api/service/haproxy/%d/section/frontend", d.Get(ServerIdField)), requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -238,9 +238,9 @@ func resourceHaproxySectionFrontendRead(ctx context.Context, d *schema.ResourceD
 		return diag.FromErr(err)
 	}
 
-	resp, err := client.doRequest("GET", fmt.Sprintf("api/service/haproxy/%s/section/frontend/%s", serverId, sectionName), nil)
+	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("api/service/haproxy/%s/section/frontend/%s", serverId, sectionName), nil)
 	if err != nil {
-		return diag.FromErr(err)
+		return readDiagnostics(d, err)
 	}
 
 	var result map[string]interface{}
@@ -266,7 +266,7 @@ func resourceHaproxySectionFrontendRead(ctx context.Context, d *schema.ResourceD
 	d.Set(MaxconnFiled, result[MaxconnFiled])
 
 	if err = setTimeoutField(d, SslField, result[SslField]); err != nil {
-		fmt.Println("Error:", err)
+		return diag.Errorf("set %s: %v", SslField, err)
 	}
 
 	binds, err := parseConfig(result[BindsField])
@@ -331,7 +331,7 @@ func resourceHaproxySectionFrontendUpdate(ctx context.Context, d *schema.Resourc
 		MaxconnFiled:       d.Get(MaxconnFiled),
 	}
 
-	_, err := client.doRequest("PUT", fmt.Sprintf("api/service/haproxy/%d/section/frontend/%s", serverId, sectionName), requestBody)
+	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("api/service/haproxy/%d/section/frontend/%s", serverId, sectionName), requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -344,7 +344,7 @@ func resourceHaproxySectionFrontendDelete(ctx context.Context, d *schema.Resourc
 	serverId := d.Get(ServerIdField)
 	sectionName := d.Get(NameField)
 
-	_, err := client.doRequest("DELETE", fmt.Sprintf("api/service/haproxy/%d/section/frontend/%s", serverId, sectionName), nil)
+	_, err := client.doRequest(ctx, "DELETE", fmt.Sprintf("api/service/haproxy/%d/section/frontend/%s", serverId, sectionName), nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

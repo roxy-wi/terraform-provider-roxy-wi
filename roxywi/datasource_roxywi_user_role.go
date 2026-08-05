@@ -54,7 +54,7 @@ func dataSourceUserRole() *schema.Resource {
 func dataSourceUserRoleRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
 
-	resp, err := client.doRequest("GET", "/api/user/roles", nil)
+	resp, err := client.doRequest(ctx, "GET", "/api/user/roles", nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

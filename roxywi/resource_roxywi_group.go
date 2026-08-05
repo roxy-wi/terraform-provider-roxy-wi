@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -13,10 +12,10 @@ import (
 
 func resourceGroup() *schema.Resource {
 	return &schema.Resource{
-		CreateWithoutTimeout: resourceGroupCreate,
-		ReadWithoutTimeout:   resourceGroupRead,
-		UpdateWithoutTimeout: resourceGroupUpdate,
-		DeleteWithoutTimeout: resourceGroupDelete,
+		CreateContext: resourceGroupCreate,
+		ReadContext:   resourceGroupRead,
+		UpdateContext: resourceGroupUpdate,
+		DeleteContext: resourceGroupDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -51,12 +50,10 @@ func resourceGroupCreate(ctx context.Context, d *schema.ResourceData, m interfac
 	description := d.Get(DescriptionField).(string)
 
 	requestBody := map[string]string{NameField: name, DescriptionField: description}
-	resp, err := client.doRequest("POST", "/api/group", requestBody)
+	resp, err := client.doRequest(ctx, "POST", "/api/group", requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
-	log.Printf("API response: %s", resp)
 
 	// Assuming the response contains an ID field with the unique identifier
 	var result map[string]interface{}
@@ -78,9 +75,9 @@ func resourceGroupRead(ctx context.Context, d *schema.ResourceData, m interface{
 	id := d.Id()
 
 	// Implement API call to read the resource
-	resp, err := client.doRequest("GET", fmt.Sprintf("/api/group/%s", id), nil)
+	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("/api/group/%s", id), nil)
 	if err != nil {
-		return diag.FromErr(err)
+		return readDiagnostics(d, err)
 	}
 
 	// Process response and set data
@@ -109,7 +106,7 @@ func resourceGroupUpdate(ctx context.Context, d *schema.ResourceData, m interfac
 		requestBody[DescriptionField] = d.Get(DescriptionField).(string)
 	}
 
-	_, err := client.doRequest("PUT", fmt.Sprintf("/api/group/%s", id), requestBody)
+	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("/api/group/%s", id), requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -122,7 +119,7 @@ func resourceGroupDelete(ctx context.Context, d *schema.ResourceData, m interfac
 	id := d.Id()
 
 	// Implement API call to delete the resource
-	_, err := client.doRequest("DELETE", fmt.Sprintf("/api/group/%s", id), nil)
+	_, err := client.doRequest(ctx, "DELETE", fmt.Sprintf("/api/group/%s", id), nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

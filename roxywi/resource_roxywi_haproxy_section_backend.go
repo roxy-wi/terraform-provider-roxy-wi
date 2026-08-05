@@ -13,10 +13,10 @@ import (
 
 func resourceHaproxySectionBackend() *schema.Resource {
 	return &schema.Resource{
-		CreateWithoutTimeout: resourceHaproxySectionBackendCreate,
-		ReadWithoutTimeout:   resourceHaproxySectionBackendRead,
-		UpdateWithoutTimeout: resourceHaproxySectionBackendUpdate,
-		DeleteWithoutTimeout: resourceHaproxySectionBackendDelete,
+		CreateContext: resourceHaproxySectionBackendCreate,
+		ReadContext:   resourceHaproxySectionBackendRead,
+		UpdateContext: resourceHaproxySectionBackendUpdate,
+		DeleteContext: resourceHaproxySectionBackendDelete,
 		CustomizeDiff: func(ctx context.Context, d *schema.ResourceDiff, m interface{}) error {
 			if err := validateModeAndOptions(d); err != nil {
 				return fmt.Errorf("error while validateModeAndOptions: %w", err)
@@ -237,7 +237,7 @@ func resourceHaproxySectionBackendCreate(ctx context.Context, d *schema.Resource
 		RedisPatchField:      d.Get(RedisPatchField),
 	}
 
-	resp, err := client.doRequest("POST", fmt.Sprintf("api/service/haproxy/%d/section/backend", d.Get(ServerIdField)), requestBody)
+	resp, err := client.doRequest(ctx, "POST", fmt.Sprintf("api/service/haproxy/%d/section/backend", d.Get(ServerIdField)), requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -263,9 +263,9 @@ func resourceHaproxySectionBackendRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	resp, err := client.doRequest("GET", fmt.Sprintf("api/service/haproxy/%s/section/backend/%s", serverId, sectionName), nil)
+	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("api/service/haproxy/%s/section/backend/%s", serverId, sectionName), nil)
 	if err != nil {
-		return diag.FromErr(err)
+		return readDiagnostics(d, err)
 	}
 
 	var result map[string]interface{}
@@ -286,20 +286,20 @@ func resourceHaproxySectionBackendRead(ctx context.Context, d *schema.ResourceDa
 	d.Set(RedisPatchField, result[RedisPatchField])
 
 	if err = setTimeoutField(d, CircuitBreakingField, result[CircuitBreakingField]); err != nil {
-		fmt.Println("Error:", err)
+		return diag.Errorf("set %s: %v", CircuitBreakingField, err)
 	}
 	if err = setTimeoutField(d, ServersCheckField, result[ServersCheckField]); err != nil {
-		fmt.Println("Error:", err)
+		return diag.Errorf("set %s: %v", ServersCheckField, err)
 	}
 	if err = setTimeoutField(d, SslField, result[SslField]); err != nil {
-		fmt.Println("Error:", err)
+		return diag.Errorf("set %s: %v", SslField, err)
 	}
 	if err = setTimeoutField(d, HealthCheckField, result[HealthCheckField]); err != nil {
-		fmt.Println("Error:", err)
+		return diag.Errorf("set %s: %v", HealthCheckField, err)
 	}
 
 	if err = setTimeoutField(d, CookieField, result[CookieField]); err != nil {
-		fmt.Println("Error:", err)
+		return diag.Errorf("set %s: %v", CookieField, err)
 	}
 
 	backendServers, err := parseConfig(result[BackendServersField])
@@ -379,7 +379,7 @@ func resourceHaproxySectionBackendUpdate(ctx context.Context, d *schema.Resource
 		BalanceField:         d.Get(BalanceField),
 	}
 
-	_, err := client.doRequest("PUT", fmt.Sprintf("api/service/haproxy/%d/section/backend/%s", serverId, sectionName), requestBody)
+	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("api/service/haproxy/%d/section/backend/%s", serverId, sectionName), requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -392,7 +392,7 @@ func resourceHaproxySectionBackendDelete(ctx context.Context, d *schema.Resource
 	serverId := d.Get(ServerIdField)
 	sectionName := d.Get(NameField)
 
-	_, err := client.doRequest("DELETE", fmt.Sprintf("api/service/haproxy/%d/section/backend/%s", serverId, sectionName), nil)
+	_, err := client.doRequest(ctx, "DELETE", fmt.Sprintf("api/service/haproxy/%d/section/backend/%s", serverId, sectionName), nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

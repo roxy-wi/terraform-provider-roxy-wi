@@ -12,10 +12,10 @@ import (
 
 func resourceHaClusterVip() *schema.Resource {
 	return &schema.Resource{
-		CreateWithoutTimeout: resourceHaClusterVipCreate,
-		ReadWithoutTimeout:   resourceHaClusterVipRead,
-		UpdateWithoutTimeout: resourceHaClusterVipUpdate,
-		DeleteWithoutTimeout: resourceHaClusterVipDelete,
+		CreateContext: resourceHaClusterVipCreate,
+		ReadContext:   resourceHaClusterVipRead,
+		UpdateContext: resourceHaClusterVipUpdate,
+		DeleteContext: resourceHaClusterVipDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -92,7 +92,6 @@ func resourceHaClusterVipCreate(ctx context.Context, d *schema.ResourceData, m i
 	clusterId := d.Get(ClusterIdField).(int)
 
 	servers := parseServersList(d.Get(ServersField).([]interface{}))
-	fmt.Printf("Servers: %+v\n", servers)
 
 	haCluster := map[string]interface{}{
 		ClusterIdField:      clusterId,
@@ -104,10 +103,7 @@ func resourceHaClusterVipCreate(ctx context.Context, d *schema.ResourceData, m i
 		ReconfigureField:    true,
 	}
 
-	jsonData, _ := json.Marshal(haCluster)
-	fmt.Printf("HA Cluster VIPData: %s\n", string(jsonData))
-
-	resp, err := client.doRequest("POST", fmt.Sprintf("/api/ha/cluster/%d/vip", clusterId), haCluster)
+	resp, err := client.doRequest(ctx, "POST", fmt.Sprintf("/api/ha/cluster/%d/vip", clusterId), haCluster)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -135,9 +131,9 @@ func resourceHaClusterVipRead(ctx context.Context, d *schema.ResourceData, m int
 		return diag.FromErr(err)
 	}
 
-	resp, err := client.doRequest("GET", fmt.Sprintf("/api/ha/cluster/%s/vip/%s", clusterId, vipId), nil)
+	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("/api/ha/cluster/%s/vip/%s", clusterId, vipId), nil)
 	if err != nil {
-		return diag.FromErr(err)
+		return readDiagnostics(d, err)
 	}
 
 	var result map[string]interface{}
@@ -180,7 +176,7 @@ func resourceHaClusterVipUpdate(ctx context.Context, d *schema.ResourceData, m i
 		UseSrcField:         boolToInt(d.Get(UseSrcField).(bool)),
 	}
 
-	_, err := client.doRequest("PUT", fmt.Sprintf("/api/ha/cluster/%s/vip/%s", clusterId, vipId), haCluster)
+	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("/api/ha/cluster/%s/vip/%s", clusterId, vipId), haCluster)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -196,7 +192,7 @@ func resourceHaClusterVipDelete(ctx context.Context, d *schema.ResourceData, m i
 		return diag.FromErr(err1)
 	}
 
-	_, err := client.doRequest("DELETE", fmt.Sprintf("/api/ha/cluster/%s/vip/%s", clusterId, vipId), nil)
+	_, err := client.doRequest(ctx, "DELETE", fmt.Sprintf("/api/ha/cluster/%s/vip/%s", clusterId, vipId), nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

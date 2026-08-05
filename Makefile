@@ -10,3 +10,9 @@ docs: docs_fmt
 
 build:
 	go build -o bin/terraform-provider-roxywi
+
+test:
+	go test ./...
+
+vet:
+	go vet ./...

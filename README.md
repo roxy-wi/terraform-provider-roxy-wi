@@ -13,8 +13,8 @@ The Terraform Provider for Roxy-WI allows you to manage Roxy-WI resources such a
 Clone the repository and build the provider using the Go toolchain:
 
 ```sh
-git clone <your-repository-url>
-cd <your-repository-directory>
+git clone https://github.com/roxy-wi/terraform-provider-roxy-wi.git
+cd terraform-provider-roxy-wi
 go build -o terraform-provider-roxywi
 ```
 
@@ -23,8 +23,8 @@ go build -o terraform-provider-roxywi
 Move the binary into the Terraform plugins directory:
 
 ```sh
-mkdir -p ~/.terraform.d/plugins/roxywi.com/roxywi/1.0.0/linux_amd64
-mv terraform-provider-roxywi ~/.terraform.d/plugins/roxywi.com/roxywi/1.0.0/linux_amd64
+mkdir -p ~/.terraform.d/plugins/registry.terraform.io/Roxy-wi/roxywi/1.5.3/linux_amd64
+mv terraform-provider-roxywi ~/.terraform.d/plugins/registry.terraform.io/Roxy-wi/roxywi/1.5.3/linux_amd64/
 ```
 
 ## Using The Provider

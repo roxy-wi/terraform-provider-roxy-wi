@@ -18,10 +18,10 @@ const (
 
 func resourceUserRoleBinding() *schema.Resource {
 	return &schema.Resource{
-		CreateWithoutTimeout: resourceUserRoleBindingCreate,
-		ReadWithoutTimeout:   resourceUserRoleBindingRead,
-		UpdateWithoutTimeout: resourceUserRoleBindingUpdate,
-		DeleteWithoutTimeout: resourceUserRoleBindingDelete,
+		CreateContext: resourceUserRoleBindingCreate,
+		ReadContext:   resourceUserRoleBindingRead,
+		UpdateContext: resourceUserRoleBindingUpdate,
+		DeleteContext: resourceUserRoleBindingDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -67,7 +67,7 @@ func resourceUserRoleBindingCreate(ctx context.Context, d *schema.ResourceData, 
 		RoleIDField: d.Get(RoleIDField).(int),
 	}
 
-	resp, err := client.doRequest("POST", fmt.Sprintf("/api/user/%d/groups/%d", userID, groupID), binding)
+	resp, err := client.doRequest(ctx, "POST", fmt.Sprintf("/api/user/%d/groups/%d", userID, groupID), binding)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -102,7 +102,7 @@ func resourceUserRoleBindingRead(ctx context.Context, d *schema.ResourceData, m 
 		return diag.FromErr(err)
 	}
 
-	resp, err := client.doRequest("GET", fmt.Sprintf("/api/user/%d/groups", userID), nil)
+	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("/api/user/%d/groups", userID), nil)
 	if err != nil {
 		if isNotFound(err) {
 			d.SetId("")
@@ -151,7 +151,7 @@ func resourceUserRoleBindingUpdate(ctx context.Context, d *schema.ResourceData, 
 		RoleIDField: d.Get(RoleIDField).(int),
 	}
 
-	_, err := client.doRequest("PUT", fmt.Sprintf("/api/user/%d/groups/%d", userID, groupID), binding)
+	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("/api/user/%d/groups/%d", userID, groupID), binding)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -170,7 +170,7 @@ func resourceUserRoleBindingDelete(ctx context.Context, d *schema.ResourceData, 
 	userIDStr := ids[0]
 	groupIDStr := ids[1]
 
-	_, err := client.doRequest("DELETE", fmt.Sprintf("/api/user/%s/groups/%s", userIDStr, groupIDStr), nil)
+	_, err := client.doRequest(ctx, "DELETE", fmt.Sprintf("/api/user/%s/groups/%s", userIDStr, groupIDStr), nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

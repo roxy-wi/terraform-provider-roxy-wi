@@ -26,7 +26,6 @@ resource "roxywi_service_installation" "example" {
   auto_start = true
   checker    = true
   metrics    = true
-  syn_flood  = false
   docker     = false
 }
 

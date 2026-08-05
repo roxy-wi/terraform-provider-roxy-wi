@@ -1,1 +1,1 @@
-% terraform import roxywi_channel.example 1
+% terraform import roxywi_channel.example telegram:1

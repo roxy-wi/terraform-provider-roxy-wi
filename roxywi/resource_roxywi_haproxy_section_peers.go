@@ -17,10 +17,10 @@ const (
 
 func resourceHaproxySectionPeers() *schema.Resource {
 	return &schema.Resource{
-		CreateWithoutTimeout: resourceHaproxySectionPeersCreate,
-		ReadWithoutTimeout:   resourceHaproxySectionPeersRead,
-		UpdateWithoutTimeout: resourceHaproxySectionPeersUpdate,
-		DeleteWithoutTimeout: resourceHaproxySectionPeersDelete,
+		CreateContext: resourceHaproxySectionPeersCreate,
+		ReadContext:   resourceHaproxySectionPeersRead,
+		UpdateContext: resourceHaproxySectionPeersUpdate,
+		DeleteContext: resourceHaproxySectionPeersDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -94,7 +94,7 @@ func resourceHaproxySectionPeersCreate(ctx context.Context, d *schema.ResourceDa
 		ActionField:   d.Get(ActionField),
 	}
 
-	resp, err := client.doRequest("POST", fmt.Sprintf("api/service/haproxy/%d/section/peers", d.Get(ServerIdField)), requestBody)
+	resp, err := client.doRequest(ctx, "POST", fmt.Sprintf("api/service/haproxy/%d/section/peers", d.Get(ServerIdField)), requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -120,9 +120,9 @@ func resourceHaproxySectionPeersRead(ctx context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 
-	resp, err := client.doRequest("GET", fmt.Sprintf("api/service/haproxy/%s/section/peers/%s", serverId, sectionName), nil)
+	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("api/service/haproxy/%s/section/peers/%s", serverId, sectionName), nil)
 	if err != nil {
-		return diag.FromErr(err)
+		return readDiagnostics(d, err)
 	}
 
 	var result map[string]interface{}
@@ -160,7 +160,7 @@ func resourceHaproxySectionPeersUpdate(ctx context.Context, d *schema.ResourceDa
 		ActionField:   d.Get(ActionField),
 	}
 
-	_, err := client.doRequest("PUT", fmt.Sprintf("api/service/haproxy/%d/section/peers/%s", serverId, sectionName), requestBody)
+	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("api/service/haproxy/%d/section/peers/%s", serverId, sectionName), requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -173,7 +173,7 @@ func resourceHaproxySectionPeersDelete(ctx context.Context, d *schema.ResourceDa
 	serverId := d.Get(ServerIdField)
 	sectionName := d.Get(NameField)
 
-	_, err := client.doRequest("DELETE", fmt.Sprintf("api/service/haproxy/%d/section/peers/%s", serverId, sectionName), nil)
+	_, err := client.doRequest(ctx, "DELETE", fmt.Sprintf("api/service/haproxy/%d/section/peers/%s", serverId, sectionName), nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

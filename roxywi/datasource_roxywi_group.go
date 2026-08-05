@@ -56,7 +56,7 @@ func dataSourceGroupRead(ctx context.Context, d *schema.ResourceData, m interfac
 }
 
 func readGroupByID(ctx context.Context, d *schema.ResourceData, client *Client, id string) diag.Diagnostics {
-	resp, err := client.doRequest("GET", fmt.Sprintf("/api/group/%s", id), nil)
+	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("/api/group/%s", id), nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -80,7 +80,7 @@ func readGroupByID(ctx context.Context, d *schema.ResourceData, client *Client, 
 }
 
 func readGroupByName(ctx context.Context, d *schema.ResourceData, client *Client, name string) diag.Diagnostics {
-	resp, err := client.doRequest("GET", "/api/groups", nil)
+	resp, err := client.doRequest(ctx, "GET", "/api/groups", nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

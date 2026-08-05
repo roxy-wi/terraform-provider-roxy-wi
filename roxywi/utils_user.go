@@ -1,27 +1,15 @@
 package roxywi
 
 import (
+	"errors"
 	"fmt"
-	"net/http"
 	"net/mail"
 )
 
 // Utility function to check if the error is a 404 not found error
 func isNotFound(err error) bool {
-	if httpErr, ok := err.(*httpError); ok {
-		return httpErr.StatusCode == http.StatusNotFound
-	}
-	return false
-}
-
-// Define the HTTPError struct and methods
-type httpError struct {
-	StatusCode int
-	Err        error
-}
-
-func (e *httpError) Error() string {
-	return e.Err.Error()
+	var apiErr *APIError
+	return errors.As(err, &apiErr) && apiErr.StatusCode == 404
 }
 
 // Utility function to validate email format

@@ -20,10 +20,10 @@ const (
 
 func resourceBackupGit() *schema.Resource {
 	return &schema.Resource{
-		CreateWithoutTimeout: resourceBackupGitCreate,
-		ReadWithoutTimeout:   resourceBackupGitRead,
-		UpdateWithoutTimeout: resourceBackupGitUpdate,
-		DeleteWithoutTimeout: resourceBackupGitDelete,
+		CreateContext: resourceBackupGitCreate,
+		ReadContext:   resourceBackupGitRead,
+		UpdateContext: resourceBackupGitUpdate,
+		DeleteContext: resourceBackupGitDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -91,7 +91,7 @@ func resourceBackupGitCreate(ctx context.Context, d *schema.ResourceData, m inte
 		RepoField:        d.Get(RepoField).(string),
 	}
 
-	resp, err := client.doRequest("POST", "/api/server/backup/git", backup)
+	resp, err := client.doRequest(ctx, "POST", "/api/server/backup/git", backup)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -100,9 +100,6 @@ func resourceBackupGitCreate(ctx context.Context, d *schema.ResourceData, m inte
 	if err := json.Unmarshal(resp, &result); err != nil {
 		return diag.FromErr(err)
 	}
-
-	// Добавляем больше логирования для отладки
-	fmt.Printf("Response result: %v\n", result)
 
 	id, ok := result["id"]
 	if !ok {
@@ -130,9 +127,9 @@ func resourceBackupGitRead(ctx context.Context, d *schema.ResourceData, m interf
 	client := m.(*Config).Client
 	id := d.Id()
 
-	resp, err := client.doRequest("GET", fmt.Sprintf("/api/server/backup/git/%s", id), nil)
+	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("/api/server/backup/git/%s", id), nil)
 	if err != nil {
-		return diag.FromErr(err)
+		return readDiagnostics(d, err)
 	}
 
 	var result map[string]interface{}
@@ -168,7 +165,7 @@ func resourceBackupGitUpdate(ctx context.Context, d *schema.ResourceData, m inte
 		RepoField:        d.Get(RepoField).(string),
 	}
 
-	_, err := client.doRequest("PUT", fmt.Sprintf("/api/server/backup/git/%s", id), backup)
+	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("/api/server/backup/git/%s", id), backup)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -186,7 +183,7 @@ func resourceBackupGitDelete(ctx context.Context, d *schema.ResourceData, m inte
 		CredIDField: d.Get(CredIDField).(int),
 	}
 
-	_, err := client.doRequest("DELETE", fmt.Sprintf("/api/server/backup/git/%s", id), deleteData)
+	_, err := client.doRequest(ctx, "DELETE", fmt.Sprintf("/api/server/backup/git/%s", id), deleteData)
 	if err != nil {
 		return diag.FromErr(err)
 	}

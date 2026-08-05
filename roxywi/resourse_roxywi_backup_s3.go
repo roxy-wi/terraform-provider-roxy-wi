@@ -22,10 +22,10 @@ const (
 
 func resourceBackupS3() *schema.Resource {
 	return &schema.Resource{
-		CreateWithoutTimeout: resourceBackupS3Create,
-		ReadWithoutTimeout:   resourceBackupS3Read,
-		UpdateWithoutTimeout: resourceBackupS3Update,
-		DeleteWithoutTimeout: resourceBackupS3Delete,
+		CreateContext: resourceBackupS3Create,
+		ReadContext:   resourceBackupS3Read,
+		UpdateContext: resourceBackupS3Update,
+		DeleteContext: resourceBackupS3Delete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -53,11 +53,13 @@ func resourceBackupS3() *schema.Resource {
 			AccessKey: {
 				Type:        schema.TypeString,
 				Required:    true,
+				Sensitive:   true,
 				Description: "S3 Access key.",
 			},
 			SecretKey: {
 				Type:        schema.TypeString,
 				Required:    true,
+				Sensitive:   true,
 				Description: "S3 Secret key.",
 			},
 			Bucket: {
@@ -102,7 +104,7 @@ func resourceBackupS3Create(ctx context.Context, d *schema.ResourceData, m inter
 		DescriptionField: description,
 	}
 
-	resp, err := client.doRequest("POST", "/api/server/backup/s3", backup)
+	resp, err := client.doRequest(ctx, "POST", "/api/server/backup/s3", backup)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -111,9 +113,6 @@ func resourceBackupS3Create(ctx context.Context, d *schema.ResourceData, m inter
 	if err := json.Unmarshal(resp, &result); err != nil {
 		return diag.FromErr(err)
 	}
-
-	// Добавляем больше логирования для отладки
-	fmt.Printf("Response result: %v\n", result)
 
 	id, ok := result["id"]
 	if !ok {
@@ -141,9 +140,9 @@ func resourceBackupS3Read(ctx context.Context, d *schema.ResourceData, m interfa
 	client := m.(*Config).Client
 	id := d.Id()
 
-	resp, err := client.doRequest("GET", fmt.Sprintf("/api/server/backup/s3/%s", id), nil)
+	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("/api/server/backup/s3/%s", id), nil)
 	if err != nil {
-		return diag.FromErr(err)
+		return readDiagnostics(d, err)
 	}
 
 	var result map[string]interface{}
@@ -180,7 +179,7 @@ func resourceBackupS3Update(ctx context.Context, d *schema.ResourceData, m inter
 		TimeField:        d.Get(TimeField).(string),
 	}
 
-	_, err := client.doRequest("PUT", fmt.Sprintf("/api/server/backup/s3/%s", id), backup)
+	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("/api/server/backup/s3/%s", id), backup)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -194,11 +193,11 @@ func resourceBackupS3Delete(ctx context.Context, d *schema.ResourceData, m inter
 
 	// Подготовка данных для удаления
 	deleteData := map[string]interface{}{
-		Bucket:      d.Get(Bucket).(int),
+		Bucket:      d.Get(Bucket).(string),
 		ServerField: d.Get(ServerField).(int),
 	}
 
-	_, err := client.doRequest("DELETE", fmt.Sprintf("/api/server/backup/s3/%s", id), deleteData)
+	_, err := client.doRequest(ctx, "DELETE", fmt.Sprintf("/api/server/backup/s3/%s", id), deleteData)
 	if err != nil {
 		return diag.FromErr(err)
 	}

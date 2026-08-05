@@ -30,6 +30,7 @@ func Provider() *schema.Provider {
 			PasswordField: {
 				Type:        schema.TypeString,
 				Required:    true,
+				Sensitive:   true,
 				Description: "Password for Roxy-WI.",
 				DefaultFunc: schema.EnvDefaultFunc("ROXYWI_PASSWORD", nil),
 			},
@@ -84,7 +85,7 @@ func Provider() *schema.Provider {
 }
 
 func providerConfigure(
-	_ context.Context,
+	ctx context.Context,
 	d *schema.ResourceData,
 	terraformVersion string,
 ) (interface{}, diag.Diagnostics) {
@@ -96,7 +97,7 @@ func providerConfigure(
 
 	var diags diag.Diagnostics
 
-	client, err := NewClient(apiEndpoint, username, password, userAgent)
+	client, err := NewClient(ctx, apiEndpoint, username, password, userAgent)
 	if err != nil {
 		return nil, diag.FromErr(err)
 	}

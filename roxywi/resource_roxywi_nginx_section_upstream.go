@@ -13,10 +13,10 @@ import (
 
 func resourceNginxSectionUpstream() *schema.Resource {
 	return &schema.Resource{
-		CreateWithoutTimeout: resourceNginxSectionUpstreamCreate,
-		ReadWithoutTimeout:   resourceNginxSectionUpstreamRead,
-		UpdateWithoutTimeout: resourceNginxSectionUpstreamUpdate,
-		DeleteWithoutTimeout: resourceNginxSectionUpstreamDelete,
+		CreateContext: resourceNginxSectionUpstreamCreate,
+		ReadContext:   resourceNginxSectionUpstreamRead,
+		UpdateContext: resourceNginxSectionUpstreamUpdate,
+		DeleteContext: resourceNginxSectionUpstreamDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -97,7 +97,7 @@ func resourceNginxSectionUpstreamCreate(ctx context.Context, d *schema.ResourceD
 		NginxKeepAlive:      d.Get(NginxKeepAlive),
 	}
 
-	resp, err := client.doRequest("POST", fmt.Sprintf("api/service/nginx/%d/section/upstream", d.Get(ServerIdField)), requestBody)
+	resp, err := client.doRequest(ctx, "POST", fmt.Sprintf("api/service/nginx/%d/section/upstream", d.Get(ServerIdField)), requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -123,9 +123,9 @@ func resourceNginxSectionUpstreamRead(ctx context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 
-	resp, err := client.doRequest("GET", fmt.Sprintf("api/service/nginx/%s/section/upstream/%s", serverId, sectionName), nil)
+	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("api/service/nginx/%s/section/upstream/%s", serverId, sectionName), nil)
 	if err != nil {
-		return diag.FromErr(err)
+		return readDiagnostics(d, err)
 	}
 	var result map[string]interface{}
 	if err := json.Unmarshal(resp, &result); err != nil {
@@ -164,7 +164,7 @@ func resourceNginxSectionUpstreamUpdate(ctx context.Context, d *schema.ResourceD
 		NginxKeepAlive:      d.Get(NginxKeepAlive),
 	}
 
-	_, err := client.doRequest("PUT", fmt.Sprintf("api/service/nginx/%d/section/upstream/%s", serverId, sectionName), requestBody)
+	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("api/service/nginx/%d/section/upstream/%s", serverId, sectionName), requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -177,7 +177,7 @@ func resourceNginxSectionUpstreamDelete(ctx context.Context, d *schema.ResourceD
 	serverId := d.Get(ServerIdField)
 	sectionName := d.Get(NameField)
 
-	_, err := client.doRequest("DELETE", fmt.Sprintf("api/service/nginx/%d/section/upstream/%s", serverId, sectionName), nil)
+	_, err := client.doRequest(ctx, "DELETE", fmt.Sprintf("api/service/nginx/%d/section/upstream/%s", serverId, sectionName), nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

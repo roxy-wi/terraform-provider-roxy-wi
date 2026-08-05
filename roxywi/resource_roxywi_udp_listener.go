@@ -36,10 +36,10 @@ const (
 
 func resourceUdpListener() *schema.Resource {
 	return &schema.Resource{
-		CreateWithoutTimeout: resourceUdpListenerCreate,
-		ReadWithoutTimeout:   resourceUdpListenerRead,
-		UpdateWithoutTimeout: resourceUdpListenerUpdate,
-		DeleteWithoutTimeout: resourceUdpListenerDelete,
+		CreateContext: resourceUdpListenerCreate,
+		ReadContext:   resourceUdpListenerRead,
+		UpdateContext: resourceUdpListenerUpdate,
+		DeleteContext: resourceUdpListenerDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -151,7 +151,7 @@ func resourceUdpListenerCreate(ctx context.Context, d *schema.ResourceData, m in
 	serverID := d.Get(ServerIdField).(int)
 	vip := d.Get(VIPField).(string)
 
-	if err := checkVipExists(client, clusterID, serverID, vip); err != nil {
+	if err := checkVipExists(ctx, client, clusterID, serverID, vip); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -177,7 +177,7 @@ func resourceUdpListenerCreate(ctx context.Context, d *schema.ResourceData, m in
 		IsCheckerFileld:  boolToInt(d.Get(IsCheckerFileld).(bool)),
 	}
 
-	resp, err := client.doRequest("POST", "/api/udp/listener", requestBody)
+	resp, err := client.doRequest(ctx, "POST", "/api/udp/listener", requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -200,9 +200,9 @@ func resourceUdpListenerRead(ctx context.Context, d *schema.ResourceData, m inte
 	client := m.(*Config).Client
 	id := d.Id()
 
-	resp, err := client.doRequest("GET", fmt.Sprintf("/api/udp/listener/%s", id), nil)
+	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("/api/udp/listener/%s", id), nil)
 	if err != nil {
-		return diag.FromErr(err)
+		return readDiagnostics(d, err)
 	}
 
 	var result map[string]interface{}
@@ -241,7 +241,7 @@ func resourceUdpListenerUpdate(ctx context.Context, d *schema.ResourceData, m in
 	serverID := d.Get(ServerIdField).(int)
 	vip := d.Get(VIPField).(string)
 
-	if err := checkVipExists(client, clusterID, serverID, vip); err != nil {
+	if err := checkVipExists(ctx, client, clusterID, serverID, vip); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -270,7 +270,7 @@ func resourceUdpListenerUpdate(ctx context.Context, d *schema.ResourceData, m in
 		requestBody[ReconfigureField] = true
 	}
 
-	_, err := client.doRequest("PUT", fmt.Sprintf("/api/udp/listener/%s", id), requestBody)
+	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("/api/udp/listener/%s", id), requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -282,7 +282,7 @@ func resourceUdpListenerDelete(ctx context.Context, d *schema.ResourceData, m in
 	client := m.(*Config).Client
 	id := d.Id()
 
-	_, err := client.doRequest("DELETE", fmt.Sprintf("/api/udp/listener/%s", id), nil)
+	_, err := client.doRequest(ctx, "DELETE", fmt.Sprintf("/api/udp/listener/%s", id), nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -1,4 +1,4 @@
 import {
   to = roxywi_channel.example
-  id = "1"
+  id = "telegram:1"
 }

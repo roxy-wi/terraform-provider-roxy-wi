@@ -3,6 +3,9 @@ package roxywi
 import (
 	"fmt"
 	"strings"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func boolToInt(b bool) int {
@@ -22,4 +25,12 @@ func resourceParseId(fullId string, delimiter string) (string, string, error) {
 		return "", "", fmt.Errorf("invalid ID format: %s", fullId)
 	}
 	return parts[0], parts[1], nil
+}
+
+func readDiagnostics(d *schema.ResourceData, err error) diag.Diagnostics {
+	if isNotFound(err) {
+		d.SetId("")
+		return nil
+	}
+	return diag.FromErr(err)
 }

@@ -1,9 +1,9 @@
 package roxywi
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 )
 
@@ -27,7 +27,6 @@ func parseConfig(config interface{}) ([]map[string]interface{}, error) {
 	switch v := config.(type) {
 	case string:
 		var parsedConfig []map[string]interface{}
-		log.Printf("[DEBUG] Config string before parsing: %s", v)
 		v = strings.ReplaceAll(v, "'", "\"")
 		if err := json.Unmarshal([]byte(v), &parsedConfig); err != nil {
 			return nil, fmt.Errorf("failed to parse config field: %v", err)
@@ -71,7 +70,7 @@ func intFromInterface(value interface{}) int {
 	}
 }
 
-func checkVipExists(client *Client, clusterID, serverID int, vip string) error {
+func checkVipExists(ctx context.Context, client *Client, clusterID, serverID int, vip string) error {
 	var url string
 	if clusterID != 0 {
 		url = fmt.Sprintf("/api/ha/cluster/%d/vips", clusterID)
@@ -81,14 +80,10 @@ func checkVipExists(client *Client, clusterID, serverID int, vip string) error {
 		return fmt.Errorf("either cluster_id or server_id must be specified")
 	}
 
-	log.Printf("[DEBUG] Checking VIP existence with URL: %s", url)
-
-	resp, err := client.doRequest("GET", url, nil)
+	resp, err := client.doRequest(ctx, "GET", url, nil)
 	if err != nil {
 		return fmt.Errorf("failed to do request: %v", err)
 	}
-
-	log.Printf("[DEBUG] Response from VIP check: %s", string(resp))
 
 	if clusterID != 0 {
 		var result []map[string]interface{}
@@ -106,8 +101,6 @@ func checkVipExists(client *Client, clusterID, serverID int, vip string) error {
 		if err := json.Unmarshal(resp, &ips); err != nil {
 			return fmt.Errorf("failed to unmarshal response: %v", err)
 		}
-
-		log.Printf("[DEBUG] Parsed response: %v", ips)
 
 		for _, itemVip := range ips {
 			if itemVip == vip {

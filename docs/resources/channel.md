@@ -67,12 +67,12 @@ In Terraform v1.7.0 and later, use an import block to import Channel. For exampl
 ```terraform
 import {
   to = roxywi_channel.example
-  id = "1"
+  id = "telegram:1"
 }
 ```
 
 Using terraform import, import Channel can be imported using the `id`, e.g. For example:
 
 ```shell
-% terraform import roxywi_channel.example 1
+% terraform import roxywi_channel.example telegram:1
 ```

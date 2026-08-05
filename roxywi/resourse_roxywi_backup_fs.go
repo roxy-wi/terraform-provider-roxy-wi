@@ -22,10 +22,10 @@ const (
 
 func resourceBackupFs() *schema.Resource {
 	return &schema.Resource{
-		CreateWithoutTimeout: resourceBackupFsCreate,
-		ReadWithoutTimeout:   resourceBackupFsRead,
-		UpdateWithoutTimeout: resourceBackupFsUpdate,
-		DeleteWithoutTimeout: resourceBackupFsDelete,
+		CreateContext: resourceBackupFsCreate,
+		ReadContext:   resourceBackupFsRead,
+		UpdateContext: resourceBackupFsUpdate,
+		DeleteContext: resourceBackupFsDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -93,7 +93,7 @@ func resourceBackupFsCreate(ctx context.Context, d *schema.ResourceData, m inter
 		TypeField:        d.Get(TypeField).(string),
 	}
 
-	resp, err := client.doRequest("POST", "/api/server/backup/fs", backup)
+	resp, err := client.doRequest(ctx, "POST", "/api/server/backup/fs", backup)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -102,9 +102,6 @@ func resourceBackupFsCreate(ctx context.Context, d *schema.ResourceData, m inter
 	if err := json.Unmarshal(resp, &result); err != nil {
 		return diag.FromErr(err)
 	}
-
-	// Добавляем больше логирования для отладки
-	fmt.Printf("Response result: %v\n", result)
 
 	id, ok := result["id"]
 	if !ok {
@@ -132,9 +129,9 @@ func resourceBackupFsRead(ctx context.Context, d *schema.ResourceData, m interfa
 	client := m.(*Config).Client
 	id := d.Id()
 
-	resp, err := client.doRequest("GET", fmt.Sprintf("/api/server/backup/fs/%s", id), nil)
+	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("/api/server/backup/fs/%s", id), nil)
 	if err != nil {
-		return diag.FromErr(err)
+		return readDiagnostics(d, err)
 	}
 
 	var result map[string]interface{}
@@ -170,7 +167,7 @@ func resourceBackupFsUpdate(ctx context.Context, d *schema.ResourceData, m inter
 		TypeField:        d.Get(TypeField).(string),
 	}
 
-	_, err := client.doRequest("PUT", fmt.Sprintf("/api/server/backup/fs/%s", id), backup)
+	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("/api/server/backup/fs/%s", id), backup)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -188,7 +185,7 @@ func resourceBackupFsDelete(ctx context.Context, d *schema.ResourceData, m inter
 		CredIDField: d.Get(CredIDField).(int),
 	}
 
-	_, err := client.doRequest("DELETE", fmt.Sprintf("/api/server/backup/fs/%s", id), deleteData)
+	_, err := client.doRequest(ctx, "DELETE", fmt.Sprintf("/api/server/backup/fs/%s", id), deleteData)
 	if err != nil {
 		return diag.FromErr(err)
 	}

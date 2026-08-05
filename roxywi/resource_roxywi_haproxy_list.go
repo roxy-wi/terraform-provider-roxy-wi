@@ -20,10 +20,10 @@ const (
 
 func resourceHaproxyList() *schema.Resource {
 	return &schema.Resource{
-		CreateWithoutTimeout: resourceHaproxyListCreate,
-		ReadWithoutTimeout:   resourceHaproxyListRead,
-		UpdateWithoutTimeout: resourceHaproxyListUpdate,
-		DeleteWithoutTimeout: resourceHaproxyListDelete,
+		CreateContext: resourceHaproxyListCreate,
+		ReadContext:   resourceHaproxyListRead,
+		UpdateContext: resourceHaproxyListUpdate,
+		DeleteContext: resourceHaproxyListDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -97,7 +97,7 @@ func resourceHaproxyListCreate(ctx context.Context, d *schema.ResourceData, m in
 		GroupIDField:  d.Get(GroupIDField),
 	}
 
-	resp, err := client.doRequest("POST", "api/service/haproxy/list", requestBody)
+	resp, err := client.doRequest(ctx, "POST", "api/service/haproxy/list", requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -123,11 +123,11 @@ func resourceHaproxyListRead(ctx context.Context, d *schema.ResourceData, m inte
 		return diag.FromErr(fmt.Errorf("expected ID in the format 'group_id-color-list_name.lst', got: %s", d.Id()))
 	}
 	color := parts[1]
-	listName := parts[2]
+	listName := strings.Join(parts[2:], "-")
 
-	resp, err := client.doRequest("GET", fmt.Sprintf("api/service/haproxy/list/%s/%s", listName, color), nil)
+	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("api/service/haproxy/list/%s/%s", listName, color), nil)
 	if err != nil {
-		return diag.FromErr(err)
+		return readDiagnostics(d, err)
 	}
 
 	var result map[string]interface{}
@@ -157,7 +157,7 @@ func resourceHaproxyListUpdate(ctx context.Context, d *schema.ResourceData, m in
 		GroupIDField:  d.Get(GroupIDField),
 	}
 
-	_, err := client.doRequest("PUT", "api/service/haproxy/list", requestBody)
+	_, err := client.doRequest(ctx, "PUT", "api/service/haproxy/list", requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -173,7 +173,7 @@ func resourceHaproxyListDelete(ctx context.Context, d *schema.ResourceData, m in
 		GroupIDField: d.Get(GroupIDField),
 	}
 
-	_, err := client.doRequest("DELETE", "api/service/haproxy/list", requestBody)
+	_, err := client.doRequest(ctx, "DELETE", "api/service/haproxy/list", requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -18,10 +18,10 @@ const (
 
 func resourceUser() *schema.Resource {
 	return &schema.Resource{
-		CreateWithoutTimeout: resourceUserCreate,
-		ReadWithoutTimeout:   resourceUserRead,
-		UpdateWithoutTimeout: resourceUserUpdate,
-		DeleteWithoutTimeout: resourceUserDelete,
+		CreateContext: resourceUserCreate,
+		ReadContext:   resourceUserRead,
+		UpdateContext: resourceUserUpdate,
+		DeleteContext: resourceUserDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -72,7 +72,7 @@ func resourceUserCreate(ctx context.Context, d *schema.ResourceData, m interface
 		UserUsernameField: d.Get(UserUsernameField).(string),
 	}
 
-	resp, err := client.doRequest("POST", "/api/user", user)
+	resp, err := client.doRequest(ctx, "POST", "/api/user", user)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -102,7 +102,7 @@ func resourceUserCreate(ctx context.Context, d *schema.ResourceData, m interface
 func resourceUserRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
 
-	resp, err := client.doRequest("GET", fmt.Sprintf("/api/user/%s", d.Id()), nil)
+	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("/api/user/%s", d.Id()), nil)
 	if err != nil {
 		if isNotFound(err) {
 			d.SetId("")
@@ -140,7 +140,7 @@ func resourceUserUpdate(ctx context.Context, d *schema.ResourceData, m interface
 		UserUsernameField: d.Get(UserUsernameField).(string),
 	}
 
-	_, err := client.doRequest("PUT", fmt.Sprintf("/api/user/%s", d.Id()), user)
+	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("/api/user/%s", d.Id()), user)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -151,7 +151,7 @@ func resourceUserUpdate(ctx context.Context, d *schema.ResourceData, m interface
 func resourceUserDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
 
-	_, err := client.doRequest("DELETE", fmt.Sprintf("/api/user/%s", d.Id()), nil)
+	_, err := client.doRequest(ctx, "DELETE", fmt.Sprintf("/api/user/%s", d.Id()), nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

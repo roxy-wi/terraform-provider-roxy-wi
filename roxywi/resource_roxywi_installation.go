@@ -22,10 +22,10 @@ const (
 
 func resourceServiceInstallation() *schema.Resource {
 	return &schema.Resource{
-		CreateWithoutTimeout: resourceServiceInstallationCreate,
-		ReadWithoutTimeout:   resourceServiceInstallationRead,
-		UpdateWithoutTimeout: resourceServiceInstallationUpdate,
-		DeleteWithoutTimeout: resourceServiceInstallationDelete,
+		CreateContext: resourceServiceInstallationCreate,
+		ReadContext:   resourceServiceInstallationRead,
+		UpdateContext: resourceServiceInstallationUpdate,
+		DeleteContext: resourceServiceInstallationDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -106,7 +106,7 @@ func resourceServiceInstallationCreate(ctx context.Context, d *schema.ResourceDa
 	}
 
 	url := fmt.Sprintf("/api/service/%s/%d/install", service, serverID)
-	resp, err := client.doRequest(http.MethodPost, url, payload)
+	resp, err := client.doRequest(ctx, http.MethodPost, url, payload)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -151,7 +151,7 @@ func resourceServiceInstallationUpdate(ctx context.Context, d *schema.ResourceDa
 	}
 
 	url := fmt.Sprintf("/api/service/%s/%d/install", service, serverID)
-	resp, err := client.doRequest(http.MethodPut, url, payload)
+	resp, err := client.doRequest(ctx, http.MethodPut, url, payload)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -185,9 +185,9 @@ func resourceServiceInstallationRead(ctx context.Context, d *schema.ResourceData
 	service := parts[1]
 
 	url := fmt.Sprintf("/api/service/%s/%s/install", service, id)
-	resp, err := client.doRequest(http.MethodGet, url, nil)
+	resp, err := client.doRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return diag.FromErr(err)
+		return readDiagnostics(d, err)
 	}
 
 	var result map[string]interface{}
@@ -213,7 +213,7 @@ func resourceServiceInstallationDelete(ctx context.Context, d *schema.ResourceDa
 	serverID := d.Get("server_id").(int)
 
 	url := fmt.Sprintf("/api/service/%s/%d/install", service, serverID)
-	_, err := client.doRequest("DELETE", url, nil)
+	_, err := client.doRequest(ctx, "DELETE", url, nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

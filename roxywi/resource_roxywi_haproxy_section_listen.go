@@ -13,10 +13,10 @@ import (
 
 func resourceHaproxySectionListen() *schema.Resource {
 	return &schema.Resource{
-		CreateWithoutTimeout: resourceHaproxySectionListenCreate,
-		ReadWithoutTimeout:   resourceHaproxySectionListenRead,
-		UpdateWithoutTimeout: resourceHaproxySectionListenUpdate,
-		DeleteWithoutTimeout: resourceHaproxySectionListenDelete,
+		CreateContext: resourceHaproxySectionListenCreate,
+		ReadContext:   resourceHaproxySectionListenRead,
+		UpdateContext: resourceHaproxySectionListenUpdate,
+		DeleteContext: resourceHaproxySectionListenDelete,
 		CustomizeDiff: func(ctx context.Context, d *schema.ResourceDiff, m interface{}) error {
 			if err := validateModeAndOptions(d); err != nil {
 				return fmt.Errorf("error while validateModeAndOptions: %w", err)
@@ -300,7 +300,7 @@ func resourceHaproxySectionListenCreate(ctx context.Context, d *schema.ResourceD
 		MaxconnFiled:         d.Get(MaxconnFiled),
 	}
 
-	resp, err := client.doRequest("POST", fmt.Sprintf("api/service/haproxy/%d/section/listen", d.Get(ServerIdField)), requestBody)
+	resp, err := client.doRequest(ctx, "POST", fmt.Sprintf("api/service/haproxy/%d/section/listen", d.Get(ServerIdField)), requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -326,9 +326,9 @@ func resourceHaproxySectionListenRead(ctx context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 
-	resp, err := client.doRequest("GET", fmt.Sprintf("api/service/haproxy/%s/section/listen/%s", serverId, sectionName), nil)
+	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("api/service/haproxy/%s/section/listen/%s", serverId, sectionName), nil)
 	if err != nil {
-		return diag.FromErr(err)
+		return readDiagnostics(d, err)
 	}
 	var result map[string]interface{}
 	if err := json.Unmarshal(resp, &result); err != nil {
@@ -354,20 +354,20 @@ func resourceHaproxySectionListenRead(ctx context.Context, d *schema.ResourceDat
 	d.Set(MaxconnFiled, result[MaxconnFiled])
 
 	if err = setTimeoutField(d, CircuitBreakingField, result[CircuitBreakingField]); err != nil {
-		fmt.Println("Error:", err)
+		return diag.Errorf("set %s: %v", CircuitBreakingField, err)
 	}
 	if err = setTimeoutField(d, ServersCheckField, result[ServersCheckField]); err != nil {
-		fmt.Println("Error:", err)
+		return diag.Errorf("set %s: %v", ServersCheckField, err)
 	}
 	if err = setTimeoutField(d, SslField, result[SslField]); err != nil {
-		fmt.Println("Error:", err)
+		return diag.Errorf("set %s: %v", SslField, err)
 	}
 	if err = setTimeoutField(d, HealthCheckField, result[HealthCheckField]); err != nil {
-		fmt.Println("Error:", err)
+		return diag.Errorf("set %s: %v", HealthCheckField, err)
 	}
 
 	if err = setTimeoutField(d, CookieField, result[CookieField]); err != nil {
-		fmt.Println("Error:", err)
+		return diag.Errorf("set %s: %v", CookieField, err)
 	}
 
 	binds, err := parseConfig(result[BindsField])
@@ -464,7 +464,7 @@ func resourceHaproxySectionListenUpdate(ctx context.Context, d *schema.ResourceD
 		MaxconnFiled:         d.Get(MaxconnFiled),
 	}
 
-	_, err := client.doRequest("PUT", fmt.Sprintf("api/service/haproxy/%d/section/listen/%s", serverId, sectionName), requestBody)
+	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("api/service/haproxy/%d/section/listen/%s", serverId, sectionName), requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -477,7 +477,7 @@ func resourceHaproxySectionListenDelete(ctx context.Context, d *schema.ResourceD
 	serverId := d.Get(ServerIdField)
 	sectionName := d.Get(NameField)
 
-	_, err := client.doRequest("DELETE", fmt.Sprintf("api/service/haproxy/%d/section/listen/%s", serverId, sectionName), nil)
+	_, err := client.doRequest(ctx, "DELETE", fmt.Sprintf("api/service/haproxy/%d/section/listen/%s", serverId, sectionName), nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

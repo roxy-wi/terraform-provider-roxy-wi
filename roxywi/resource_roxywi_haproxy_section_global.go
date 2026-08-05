@@ -23,9 +23,9 @@ const (
 
 func resourceHaproxySectionGlobal() *schema.Resource {
 	return &schema.Resource{
-		ReadWithoutTimeout:   resourceHaproxySectionGlobalRead,
-		UpdateWithoutTimeout: resourceHaproxySectionGlobalUpdate,
-		DeleteWithoutTimeout: resourceHaproxySectionGlobalDelete,
+		ReadContext:   resourceHaproxySectionGlobalRead,
+		UpdateContext: resourceHaproxySectionGlobalUpdate,
+		DeleteContext: resourceHaproxySectionGlobalDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -120,9 +120,9 @@ func resourceHaproxySectionGlobalRead(ctx context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 
-	resp, err := client.doRequest("GET", fmt.Sprintf("api/service/haproxy/%s/section/global", serverId), nil)
+	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("api/service/haproxy/%s/section/global", serverId), nil)
 	if err != nil {
-		return diag.FromErr(err)
+		return readDiagnostics(d, err)
 	}
 
 	var result map[string]interface{}
@@ -163,7 +163,7 @@ func resourceHaproxySectionGlobalUpdate(ctx context.Context, d *schema.ResourceD
 		ActionField:    d.Get(ActionField),
 	}
 
-	_, err := client.doRequest("PUT", fmt.Sprintf("api/service/haproxy/%d/section/global", serverId), requestBody)
+	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("api/service/haproxy/%d/section/global", serverId), requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}

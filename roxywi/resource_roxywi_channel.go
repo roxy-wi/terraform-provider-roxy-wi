@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"log"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 const (
@@ -25,13 +25,13 @@ const (
 
 func resourceChannel() *schema.Resource {
 	return &schema.Resource{
-		CreateWithoutTimeout: resourceChannelCreate,
-		ReadWithoutTimeout:   resourceChannelRead,
-		UpdateWithoutTimeout: resourceChannelUpdate,
-		DeleteWithoutTimeout: resourceChannelDelete,
+		CreateContext: resourceChannelCreate,
+		ReadContext:   resourceChannelRead,
+		UpdateContext: resourceChannelUpdate,
+		DeleteContext: resourceChannelDelete,
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: resourceChannelImport,
 		},
 
 		Timeouts: &schema.ResourceTimeout{
@@ -63,10 +63,33 @@ func resourceChannel() *schema.Resource {
 			TokenField: {
 				Type:        schema.TypeString,
 				Required:    true,
+				Sensitive:   true,
 				Description: "The token used for the channel.",
 			},
 		},
 	}
+}
+
+func resourceChannelImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
+	parts := strings.SplitN(d.Id(), ":", 2)
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return nil, fmt.Errorf("expected channel import ID in the format 'receiver:id', got %q", d.Id())
+	}
+
+	switch parts[0] {
+	case ReceiverTypeTelegram, ReceiverTypeSlack, ReceiverTypePagerDuty, ReceiverTypeMattermost:
+	default:
+		return nil, fmt.Errorf("unsupported channel receiver %q", parts[0])
+	}
+	if id, err := strconv.Atoi(parts[1]); err != nil || id <= 0 {
+		return nil, fmt.Errorf("channel ID must be a positive integer, got %q", parts[1])
+	}
+
+	if err := d.Set(ReceiverField, parts[0]); err != nil {
+		return nil, fmt.Errorf("set imported channel receiver: %w", err)
+	}
+	d.SetId(parts[1])
+	return []*schema.ResourceData{d}, nil
 }
 
 func resourceChannelCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -81,12 +104,10 @@ func resourceChannelCreate(ctx context.Context, d *schema.ResourceData, m interf
 		TokenField:    d.Get(TokenField).(string),
 	}
 
-	resp, err := client.doRequest("POST", fmt.Sprintf("/api/channel/%s", receiver), channel)
+	resp, err := client.doRequest(ctx, "POST", fmt.Sprintf("/api/channel/%s", receiver), channel)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
-	log.Printf("API response: %s", resp)
 
 	var result map[string]interface{}
 	if err := json.Unmarshal(resp, &result); err != nil {
@@ -107,9 +128,9 @@ func resourceChannelRead(ctx context.Context, d *schema.ResourceData, m interfac
 	id := d.Id()
 	receiver := d.Get(ReceiverField).(string)
 
-	resp, err := client.doRequest("GET", fmt.Sprintf("/api/channel/%s/%s", receiver, id), nil)
+	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("/api/channel/%s/%s", receiver, id), nil)
 	if err != nil {
-		return diag.FromErr(err)
+		return readDiagnostics(d, err)
 	}
 
 	var result map[string]interface{}
@@ -149,7 +170,7 @@ func resourceChannelUpdate(ctx context.Context, d *schema.ResourceData, m interf
 		TokenField:    d.Get(TokenField).(string),
 	}
 
-	_, err := client.doRequest("PUT", fmt.Sprintf("/api/channel/%s/%s", receiver, id), channel)
+	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("/api/channel/%s/%s", receiver, id), channel)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -162,7 +183,7 @@ func resourceChannelDelete(ctx context.Context, d *schema.ResourceData, m interf
 	id := d.Id()
 	receiver := d.Get(ReceiverField).(string)
 
-	_, err := client.doRequest("DELETE", fmt.Sprintf("/api/channel/%s/%s", receiver, id), nil)
+	_, err := client.doRequest(ctx, "DELETE", fmt.Sprintf("/api/channel/%s/%s", receiver, id), nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}
