@@ -10,6 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 const (
@@ -40,6 +41,7 @@ func resourceBackupFs() *schema.Resource {
 		Description: "Manage backups to remote File system",
 
 		Schema: map[string]*schema.Schema{
+			"schedule": backupScheduleSchema(),
 			CredIDField: {
 				Type:        schema.TypeInt,
 				Required:    true,
@@ -66,9 +68,10 @@ func resourceBackupFs() *schema.Resource {
 				Description: "Server ID for the backup.",
 			},
 			TimeField: {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "Time for the backup. Could be: dayli, weekly, monthly",
+				Type:         schema.TypeString,
+				Required:     true,
+				Description:  "Backup period: hourly, daily, weekly or monthly.",
+				ValidateFunc: validation.StringInSlice([]string{"hourly", "daily", "weekly", "monthly"}, false),
 			},
 			TypeField: {
 				Type:        schema.TypeString,
@@ -169,7 +172,7 @@ func resourceBackupFsRead(ctx context.Context, d *schema.ResourceData, m interfa
 		return diag.Errorf("set Terraform state: %v", err)
 	}
 
-	return nil
+	return readBackupSchedule(d, result["schedule"])
 }
 
 func resourceBackupFsUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

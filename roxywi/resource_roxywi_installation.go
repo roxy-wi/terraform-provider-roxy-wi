@@ -32,9 +32,9 @@ func resourceServiceInstallation() *schema.Resource {
 		},
 
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(5 * time.Minute),
-			Update: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(5 * time.Minute),
+			Create: schema.DefaultTimeout(30 * time.Minute),
+			Update: schema.DefaultTimeout(30 * time.Minute),
+			Delete: schema.DefaultTimeout(30 * time.Minute),
 		},
 
 		Description: "Manages service installation and Tools settings.",
@@ -81,6 +81,8 @@ func resourceServiceInstallation() *schema.Resource {
 }
 
 func resourceServiceInstallationCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	ctx, cancel := context.WithTimeout(ctx, d.Timeout(schema.TimeoutCreate))
+	defer cancel()
 	client := m.(*Config).Client
 
 	service, ok := d.Get("service").(string)
@@ -122,10 +124,15 @@ func resourceServiceInstallationCreate(ctx context.Context, d *schema.ResourceDa
 	}
 	d.SetId(id)
 
+	if err := client.waitForTasks(ctx, resp); err != nil {
+		return diag.FromErr(err)
+	}
 	return resourceServiceInstallationRead(ctx, d, m)
 }
 
 func resourceServiceInstallationUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	ctx, cancel := context.WithTimeout(ctx, d.Timeout(schema.TimeoutUpdate))
+	defer cancel()
 	client := m.(*Config).Client
 
 	service, ok := d.Get("service").(string)
@@ -167,6 +174,9 @@ func resourceServiceInstallationUpdate(ctx context.Context, d *schema.ResourceDa
 	}
 	d.SetId(id)
 
+	if err := client.waitForTasks(ctx, resp); err != nil {
+		return diag.FromErr(err)
+	}
 	return resourceServiceInstallationRead(ctx, d, m)
 }
 

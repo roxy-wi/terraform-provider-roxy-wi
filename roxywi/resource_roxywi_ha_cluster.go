@@ -140,6 +140,8 @@ func resourceHaCluster() *schema.Resource {
 }
 
 func resourceHaClusterCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	ctx, cancel := context.WithTimeout(ctx, d.Timeout(schema.TimeoutCreate))
+	defer cancel()
 	client := m.(*Config).Client
 
 	description := strings.ReplaceAll(d.Get(DescriptionField).(string), "'", "")
@@ -189,6 +191,9 @@ func resourceHaClusterCreate(ctx context.Context, d *schema.ResourceData, m inte
 	}
 
 	d.SetId(fmt.Sprintf("%d", id))
+	if err := client.waitForTasks(ctx, resp); err != nil {
+		return diag.FromErr(err)
+	}
 	return resourceHaClusterRead(ctx, d, m)
 }
 
@@ -303,6 +308,8 @@ func flattenHAServices(value interface{}) ([]map[string]interface{}, error) {
 }
 
 func resourceHaClusterUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	ctx, cancel := context.WithTimeout(ctx, d.Timeout(schema.TimeoutUpdate))
+	defer cancel()
 	client := m.(*Config).Client
 	id := d.Id()
 
@@ -340,11 +347,14 @@ func resourceHaClusterUpdate(ctx context.Context, d *schema.ResourceData, m inte
 		haCluster[ReconfigureField] = true
 	}
 
-	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("/api/ha/cluster/%s", id), haCluster)
+	resp, err := client.doRequest(ctx, "PUT", fmt.Sprintf("/api/ha/cluster/%s", id), haCluster)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
+	if err := client.waitForTasks(ctx, resp); err != nil {
+		return diag.FromErr(err)
+	}
 	return resourceHaClusterRead(ctx, d, m)
 }
 

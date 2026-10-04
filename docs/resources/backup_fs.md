@@ -39,7 +39,7 @@ resource "roxywi_backup_fs" "example" {
 - `rpath` (String) Remote path for the backup.
 - `rserver` (String) Remote server for the backup.
 - `server_id` (Number) Server ID for the backup.
-- `time` (String) Time for the backup. Could be: dayli, weekly, monthly
+- `time` (String) Time for the backup. Could be: hourly, daily, weekly, monthly
 - `type` (String) Type of the backup. Could be: backup, synchronization
 
 ### Optional
@@ -50,6 +50,7 @@ resource "roxywi_backup_fs" "example" {
 ### Read-Only
 
 - `id` (String) The ID of this resource.
+- `schedule` (List of Object) Scheduler state (Roxy-WI 9.1+): `timezone`, `next_run_at`, `retry_at`, `migration_required`, `last_task_id`, `last_status`. Empty when no schedule exists.
 
 <a id="nestedblock--timeouts"></a>
 ### Nested Schema for `timeouts`

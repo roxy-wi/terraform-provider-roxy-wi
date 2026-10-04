@@ -20,21 +20,31 @@ Manage Let's Encrypt certificates.
 
 ### Required
 
-- `domains` (List of String) A list of user letsencrypts.
+- `domains` (List of String) Certificate domains; the first determines the PEM name.
 - `server_id` (Number) The ID of the server to deploy to.
 - `type` (String) What challenge should be used. Available: 'standalone', 'route53', 'digitalocean', 'cloudflare', 'linode'
 
 ### Optional
 
-- `api_key` (String) Secret key to use for authentication in DNS API. For Route53.
-- `api_token` (String) Token to use for authentication in DNS API. For Route53 it is the access key.
+- `api_key` (String, Sensitive) Route53 access key ID. Conflicts with `dns_profile_id`.
+- `api_token` (String, Sensitive) DNS API token; Route53 secret access key. Conflicts with `dns_profile_id`.
 - `description` (String) Description of the certificate.
+- `dns_profile_id` (Number) Existing DNS profile in the same group (Roxy-WI 9.1+).
+- `draft` (Boolean) Save without issuing. Change to false to run preflight and issue. Default: false.
 - `email` (String) Email address to use for registration with Let's Encrypt.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 
 ### Read-Only
 
 - `id` (String) The ID of this resource.
+- `status` (String) Certificate lifecycle status.
+- `pem_name` (String) Managed PEM filename.
+- `not_after` (String) Certificate expiry in UTC.
+- `next_run_at` (String) Next renewal check in UTC.
+- `retry_at` (String) Next automatic retry in UTC.
+- `last_task_id` (Number) Latest Operations task ID.
+- `last_error_code` (String) Latest certificate error code.
+- `legacy_pending` (Boolean) Whether legacy cron migration is required.
 
 <a id="nestedblock--timeouts"></a>
 ### Nested Schema for `timeouts`
@@ -47,10 +57,10 @@ Optional:
 
 ## Import
 
-In Terraform v1.7.0 and later, use an import block to import Group. For example:
+In Terraform v1.7.0 and later, use an import block to import a certificate. For example:
 
 {{tffile "./examples/resources/letsencrypt/example_2.tf"}}
 
-Using terraform import, import Group can be imported using the `id`, e.g. For example:
+Import a certificate using its `id`:
 
 {{codefile "shell" "./examples/resources/letsencrypt/import.sh"}}

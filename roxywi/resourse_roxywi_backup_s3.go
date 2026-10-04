@@ -10,6 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 const (
@@ -40,6 +41,7 @@ func resourceBackupS3() *schema.Resource {
 		Description: "Manage creating backup to S3.",
 
 		Schema: map[string]*schema.Schema{
+			"schedule": backupScheduleSchema(),
 			S3Server: {
 				Type:        schema.TypeString,
 				Required:    true,
@@ -68,9 +70,10 @@ func resourceBackupS3() *schema.Resource {
 				Description: "S3 bucket.",
 			},
 			TimeField: {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "Time for the backup. Could be: dayli, weekly, monthly",
+				Type:         schema.TypeString,
+				Required:     true,
+				Description:  "Backup period: hourly, daily, weekly or monthly.",
+				ValidateFunc: validation.StringInSlice([]string{"hourly", "daily", "weekly", "monthly"}, false),
 			},
 			ServerField: {
 				Type:        schema.TypeInt,
@@ -176,7 +179,7 @@ func resourceBackupS3Read(ctx context.Context, d *schema.ResourceData, m interfa
 	// Credentials are deliberately not refreshed from API responses. This keeps
 	// echoed secrets out of state while preserving configured values.
 
-	return nil
+	return readBackupSchedule(d, result["schedule"])
 }
 
 func resourceBackupS3Update(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

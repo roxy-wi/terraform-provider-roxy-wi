@@ -39,7 +39,7 @@ resource "roxywi_backup_s3" "example" {
 - `s3_backup_s3` (String) S3 backup_s3 endpoint.
 - `secret_key` (String) S3 Secret key.
 - `backup_s3_id` (Number) backup_s3 ID for backup
-- `time` (String) Time for the backup. Could be: dayli, weekly, monthly
+- `time` (String) Time for the backup. Could be: hourly, daily, weekly, monthly
 
 ### Optional
 
@@ -49,6 +49,7 @@ resource "roxywi_backup_s3" "example" {
 ### Read-Only
 
 - `id` (String) The ID of this resource.
+- `schedule` (List of Object) Scheduler state (Roxy-WI 9.1+): `timezone`, `next_run_at`, `retry_at`, `migration_required`, `last_task_id`, `last_status`. Empty when no schedule exists.
 
 <a id="nestedblock--timeouts"></a>
 ### Nested Schema for `timeouts`
