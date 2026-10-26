@@ -6,7 +6,7 @@ Manage Roxy-WI servers, service configurations, HA clusters, backups and Let's E
 ## Requirements
 
 - [Terraform](https://www.terraform.io/downloads.html) v1.7.0+
-- Go 1.26.6+ (to build the provider)
+- Go 1.26.10+ (to build the provider)
 
 ## Building The Provider
 
