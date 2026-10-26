@@ -47,6 +47,7 @@ resource "roxywi_haproxy_section_peers" "example" {
 
 ### Optional
 
+- `file_path` (String) Absolute HAProxy configuration file managed by this resource. Requires Roxy-WI 9.2 or later; omit it to use the main configuration file.
 - `server_id` (Number) ID of a server to what should be deployed
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 
@@ -74,6 +75,8 @@ Optional:
 - `update` (String)
 
 ## Import
+
+Use `server_id-section_name` for the main file or `server_id|file_path|section_name` for an additional HAProxy configuration file.
 
 In Terraform v1.7.0 and later, use an import block to import Group. For example:
 

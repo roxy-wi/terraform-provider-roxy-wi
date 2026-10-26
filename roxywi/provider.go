@@ -67,9 +67,10 @@ func Provider() *schema.Provider {
 			"roxywi_nginx_section_upstream":    resourceNginxSectionUpstream(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"roxywi_group":        dataSourceGroup(),
-			"roxywi_udp_listener": dataSourceUdpListener(),
-			"roxywi_user_role":    dataSourceUserRole(),
+			"roxywi_group":                dataSourceGroup(),
+			"roxywi_haproxy_config_files": dataSourceHaproxyConfigFiles(),
+			"roxywi_udp_listener":         dataSourceUdpListener(),
+			"roxywi_user_role":            dataSourceUserRole(),
 		},
 	}
 

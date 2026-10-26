@@ -41,6 +41,7 @@ resource "roxywi_haproxy_section_global" "example" {
 ### Optional
 
 - `action` (String) What action should be taken after changing the config. Available: save, reload, restart.
+- `file_path` (String) Absolute HAProxy configuration file managed by this resource. Requires Roxy-WI 9.2 or later; omit it to use the main configuration file.
 - `chroot` (String) HAProxy is designed to isolate itself into a chroot jail during startup, where it cannot perform any file-system access at all.
 - `daemon` (Boolean) Start as a daemon. The process detaches from the current terminal after forking, and errors are not reported anymore in the terminal.
 - `group` (String) A group with what HAProxy will be started.
@@ -65,6 +66,8 @@ Optional:
 - `update` (String)
 
 ## Import
+
+Use `server_id-global` for the main file or `server_id|file_path|global` for an additional HAProxy configuration file.
 
 In Terraform v1.7.0 and later, use an import block to import Group. For example:
 

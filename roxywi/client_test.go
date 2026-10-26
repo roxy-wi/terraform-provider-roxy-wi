@@ -51,6 +51,32 @@ func TestClientJoinsBaseURLAndEndpoint(t *testing.T) {
 	}
 }
 
+func TestClientPreservesEndpointQuery(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/login" {
+			_, _ = w.Write([]byte(`{"access_token":"token"}`))
+			return
+		}
+		if r.URL.Path != "/api/service/haproxy/7/section/backend/api" {
+			t.Errorf("unexpected request path %q", r.URL.Path)
+		}
+		if got := r.URL.Query().Get(FilePathField); got != "/etc/haproxy/conf.d/apps.cfg" {
+			t.Errorf("unexpected file_path query %q", got)
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	defer server.Close()
+
+	client, err := NewClient(context.Background(), server.URL, "user", "password", "test-agent")
+	if err != nil {
+		t.Fatal(err)
+	}
+	endpoint := haproxySectionURL("/api/service/haproxy/7/section/backend/api", "/etc/haproxy/conf.d/apps.cfg")
+	if _, err := client.doRequest(context.Background(), http.MethodGet, endpoint, nil); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestClientRefreshesAuthenticationOnce(t *testing.T) {
 	var mu sync.Mutex
 	loginCount := 0

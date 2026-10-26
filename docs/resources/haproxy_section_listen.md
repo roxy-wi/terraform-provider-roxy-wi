@@ -58,6 +58,7 @@ resource "roxywi_haproxy_section_listen" "example" {
 
 - `acls` (Block List) List of ACLs configuration. (see [below for nested schema](#nestedblock--acls))
 - `action` (String) What action should be taken after changing the config. Available: save, reload, restart.
+- `file_path` (String) Absolute HAProxy configuration file managed by this resource. Requires Roxy-WI 9.2 or later; omit it to use the main configuration file.
 - `antibot` (Boolean) Add Anti Bot settings.
 - `backend_servers` (Block List) List of backend servers configuration. (see [below for nested schema](#nestedblock--backend_servers))
 - `blacklist` (String) Path to a blacklist.
@@ -205,6 +206,8 @@ Optional:
 
 
 ## Import
+
+Use `server_id-section_name` for the main file or `server_id|file_path|section_name` for an additional HAProxy configuration file.
 
 In Terraform v1.7.0 and later, use an import block to import Group. For example:
 

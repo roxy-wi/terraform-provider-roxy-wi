@@ -125,7 +125,7 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, body in
 }
 
 func (c *Client) doRequestWithAuthRetry(ctx context.Context, method, endpoint string, body interface{}, retryAuth bool) ([]byte, error) {
-	requestURL, err := url.JoinPath(c.baseURL, endpoint)
+	requestURL, err := joinRequestURL(c.baseURL, endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("build Roxy-WI API URL: %w", err)
 	}
@@ -176,4 +176,24 @@ func (c *Client) doRequestWithAuthRetry(ctx context.Context, method, endpoint st
 	}
 
 	return respBody, nil
+}
+
+func joinRequestURL(baseURL, endpoint string) (string, error) {
+	parsedEndpoint, err := url.Parse(endpoint)
+	if err != nil {
+		return "", fmt.Errorf("parse Roxy-WI API endpoint: %w", err)
+	}
+	if parsedEndpoint.IsAbs() || parsedEndpoint.Host != "" || parsedEndpoint.Fragment != "" {
+		return "", fmt.Errorf("Roxy-WI API endpoint must be a relative URL without a fragment")
+	}
+	requestURL, err := url.JoinPath(baseURL, parsedEndpoint.Path)
+	if err != nil {
+		return "", err
+	}
+	parsedRequestURL, err := url.Parse(requestURL)
+	if err != nil {
+		return "", err
+	}
+	parsedRequestURL.RawQuery = parsedEndpoint.RawQuery
+	return parsedRequestURL.String(), nil
 }

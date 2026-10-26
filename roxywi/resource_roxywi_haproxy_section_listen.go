@@ -25,7 +25,7 @@ func resourceHaproxySectionListen() *schema.Resource {
 		},
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: haproxySectionImport(""),
 		},
 
 		Timeouts: &schema.ResourceTimeout{
@@ -37,6 +37,7 @@ func resourceHaproxySectionListen() *schema.Resource {
 		Description: "Manage HAProxy Listen sections. Please note that changes may cause HAProxy to restart.",
 
 		Schema: map[string]*schema.Schema{
+			FilePathField: haproxyFilePathSchema(true),
 			NameField: {
 				Type:        schema.TypeString,
 				Required:    true,
@@ -300,7 +301,8 @@ func resourceHaproxySectionListenCreate(ctx context.Context, d *schema.ResourceD
 		MaxconnFiled:         d.Get(MaxconnFiled),
 	}
 
-	resp, err := client.doRequest(ctx, "POST", fmt.Sprintf("api/service/haproxy/%d/section/listen", d.Get(ServerIdField)), requestBody)
+	endpoint := haproxySectionURL(fmt.Sprintf("api/service/haproxy/%d/section/listen", d.Get(ServerIdField)), haproxySectionFilePath(d))
+	resp, err := client.doRequest(ctx, "POST", endpoint, requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -315,18 +317,25 @@ func resourceHaproxySectionListenCreate(ctx context.Context, d *schema.ResourceD
 		return diag.Errorf("unable to find ID in response: %v", result)
 	}
 
-	d.SetId(fmt.Sprintf("%s", id))
+	if err := setHaproxySectionIDFromAPI(d, id); err != nil {
+		return diag.FromErr(err)
+	}
 	return resourceHaproxySectionListenRead(ctx, d, m)
 }
 
 func resourceHaproxySectionListenRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
-	serverId, sectionName, err := resourceSectionParseId(d.Id())
+	serverId, sectionName, filePath, err := resourceHaproxySectionParseID(d.Id())
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	filePath, err = syncHaproxySectionFilePath(d, filePath)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("api/service/haproxy/%s/section/listen/%s", serverId, sectionName), nil)
+	endpoint := haproxySectionURL(fmt.Sprintf("api/service/haproxy/%s/section/listen/%s", serverId, sectionName), filePath)
+	resp, err := client.doRequest(ctx, "GET", endpoint, nil)
 	if err != nil {
 		return readDiagnostics(d, err)
 	}
@@ -508,7 +517,8 @@ func resourceHaproxySectionListenUpdate(ctx context.Context, d *schema.ResourceD
 		MaxconnFiled:         d.Get(MaxconnFiled),
 	}
 
-	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("api/service/haproxy/%d/section/listen/%s", serverId, sectionName), requestBody)
+	endpoint := haproxySectionURL(fmt.Sprintf("api/service/haproxy/%d/section/listen/%s", serverId, sectionName), haproxySectionFilePath(d))
+	_, err := client.doRequest(ctx, "PUT", endpoint, requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -521,7 +531,8 @@ func resourceHaproxySectionListenDelete(ctx context.Context, d *schema.ResourceD
 	serverId := d.Get(ServerIdField)
 	sectionName := d.Get(NameField)
 
-	_, err := client.doRequest(ctx, "DELETE", fmt.Sprintf("api/service/haproxy/%d/section/listen/%s", serverId, sectionName), nil)
+	endpoint := haproxySectionURL(fmt.Sprintf("api/service/haproxy/%d/section/listen/%s", serverId, sectionName), haproxySectionFilePath(d))
+	_, err := client.doRequest(ctx, "DELETE", endpoint, nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

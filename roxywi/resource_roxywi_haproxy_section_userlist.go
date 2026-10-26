@@ -25,7 +25,7 @@ func resourceHaproxySectionUserlist() *schema.Resource {
 		DeleteContext: resourceHaproxySectionUserlistDelete,
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: haproxySectionImport(""),
 		},
 
 		Timeouts: &schema.ResourceTimeout{
@@ -37,6 +37,7 @@ func resourceHaproxySectionUserlist() *schema.Resource {
 		Description: "Manage HAProxy User list sections. Please note that changes may cause HAProxy to restart.",
 
 		Schema: map[string]*schema.Schema{
+			FilePathField: haproxyFilePathSchema(true),
 			NameField: {
 				Type:        schema.TypeString,
 				Required:    true,
@@ -106,7 +107,8 @@ func resourceHaproxySectionUserlistCreate(ctx context.Context, d *schema.Resourc
 		ActionField:   d.Get(ActionField),
 	}
 
-	resp, err := client.doRequest(ctx, "POST", fmt.Sprintf("api/service/haproxy/%d/section/userlist", d.Get(ServerIdField)), requestBody)
+	endpoint := haproxySectionURL(fmt.Sprintf("api/service/haproxy/%d/section/userlist", d.Get(ServerIdField)), haproxySectionFilePath(d))
+	resp, err := client.doRequest(ctx, "POST", endpoint, requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -121,18 +123,25 @@ func resourceHaproxySectionUserlistCreate(ctx context.Context, d *schema.Resourc
 		return diag.Errorf("unable to find ID in response: %v", result)
 	}
 
-	d.SetId(fmt.Sprintf("%s", id))
+	if err := setHaproxySectionIDFromAPI(d, id); err != nil {
+		return diag.FromErr(err)
+	}
 	return resourceHaproxySectionUserlistRead(ctx, d, m)
 }
 
 func resourceHaproxySectionUserlistRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
-	serverId, sectionName, err := resourceSectionParseId(d.Id())
+	serverId, sectionName, filePath, err := resourceHaproxySectionParseID(d.Id())
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	filePath, err = syncHaproxySectionFilePath(d, filePath)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("api/service/haproxy/%s/section/userlist/%s", serverId, sectionName), nil)
+	endpoint := haproxySectionURL(fmt.Sprintf("api/service/haproxy/%s/section/userlist/%s", serverId, sectionName), filePath)
+	resp, err := client.doRequest(ctx, "GET", endpoint, nil)
 	if err != nil {
 		return readDiagnostics(d, err)
 	}
@@ -186,7 +195,8 @@ func resourceHaproxySectionUserlistUpdate(ctx context.Context, d *schema.Resourc
 		ActionField:   d.Get(ActionField),
 	}
 
-	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("api/service/haproxy/%d/section/userlist/%s", serverId, sectionName), requestBody)
+	endpoint := haproxySectionURL(fmt.Sprintf("api/service/haproxy/%d/section/userlist/%s", serverId, sectionName), haproxySectionFilePath(d))
+	_, err := client.doRequest(ctx, "PUT", endpoint, requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -199,7 +209,8 @@ func resourceHaproxySectionUserlistDelete(ctx context.Context, d *schema.Resourc
 	serverId := d.Get(ServerIdField)
 	sectionName := d.Get(NameField)
 
-	_, err := client.doRequest(ctx, "DELETE", fmt.Sprintf("api/service/haproxy/%d/section/userlist/%s", serverId, sectionName), nil)
+	endpoint := haproxySectionURL(fmt.Sprintf("api/service/haproxy/%d/section/userlist/%s", serverId, sectionName), haproxySectionFilePath(d))
+	_, err := client.doRequest(ctx, "DELETE", endpoint, nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

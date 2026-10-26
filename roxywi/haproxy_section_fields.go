@@ -71,6 +71,7 @@ const (
 	DdosField                      = "ddos"
 	WafField                       = "waf"
 	UseBackendField                = "backends"
+	FilePathField                  = "file_path"
 )
 
 func backendServerSchema() map[string]*schema.Schema {

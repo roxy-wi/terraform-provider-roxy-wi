@@ -49,6 +49,7 @@ resource "roxywi_haproxy_section_user_list" "example" {
 ### Optional
 
 - `action` (String) What action should be taken after changing the config. Available: save, reload, restart.
+- `file_path` (String) Absolute HAProxy configuration file managed by this resource. Requires Roxy-WI 9.2 or later; omit it to use the main configuration file.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `userlist_groups` (List of String) A list of user groups.
 
@@ -79,6 +80,8 @@ Optional:
 - `update` (String)
 
 ## Import
+
+Use `server_id-section_name` for the main file or `server_id|file_path|section_name` for an additional HAProxy configuration file.
 
 In Terraform v1.7.0 and later, use an import block to import Group. For example:
 

@@ -25,7 +25,7 @@ func resourceHaproxySectionBackend() *schema.Resource {
 		},
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: haproxySectionImport(""),
 		},
 
 		Timeouts: &schema.ResourceTimeout{
@@ -37,6 +37,7 @@ func resourceHaproxySectionBackend() *schema.Resource {
 		Description: "Manage HAProxy Backend sections. Please note that changes may cause HAProxy to restart.",
 
 		Schema: map[string]*schema.Schema{
+			FilePathField: haproxyFilePathSchema(true),
 			NameField: {
 				Type:        schema.TypeString,
 				Required:    true,
@@ -237,7 +238,8 @@ func resourceHaproxySectionBackendCreate(ctx context.Context, d *schema.Resource
 		RedisPatchField:      d.Get(RedisPatchField),
 	}
 
-	resp, err := client.doRequest(ctx, "POST", fmt.Sprintf("api/service/haproxy/%d/section/backend", d.Get(ServerIdField)), requestBody)
+	endpoint := haproxySectionURL(fmt.Sprintf("api/service/haproxy/%d/section/backend", d.Get(ServerIdField)), haproxySectionFilePath(d))
+	resp, err := client.doRequest(ctx, "POST", endpoint, requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -252,18 +254,25 @@ func resourceHaproxySectionBackendCreate(ctx context.Context, d *schema.Resource
 		return diag.Errorf("unable to find ID in response: %v", result)
 	}
 
-	d.SetId(fmt.Sprintf("%s", id))
+	if err := setHaproxySectionIDFromAPI(d, id); err != nil {
+		return diag.FromErr(err)
+	}
 	return resourceHaproxySectionBackendRead(ctx, d, m)
 }
 
 func resourceHaproxySectionBackendRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
-	serverId, sectionName, err := resourceSectionParseId(d.Id())
+	serverId, sectionName, filePath, err := resourceHaproxySectionParseID(d.Id())
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	filePath, err = syncHaproxySectionFilePath(d, filePath)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("api/service/haproxy/%s/section/backend/%s", serverId, sectionName), nil)
+	endpoint := haproxySectionURL(fmt.Sprintf("api/service/haproxy/%s/section/backend/%s", serverId, sectionName), filePath)
+	resp, err := client.doRequest(ctx, "GET", endpoint, nil)
 	if err != nil {
 		return readDiagnostics(d, err)
 	}
@@ -409,7 +418,8 @@ func resourceHaproxySectionBackendUpdate(ctx context.Context, d *schema.Resource
 		BalanceField:         d.Get(BalanceField),
 	}
 
-	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("api/service/haproxy/%d/section/backend/%s", serverId, sectionName), requestBody)
+	endpoint := haproxySectionURL(fmt.Sprintf("api/service/haproxy/%d/section/backend/%s", serverId, sectionName), haproxySectionFilePath(d))
+	_, err := client.doRequest(ctx, "PUT", endpoint, requestBody)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -422,7 +432,8 @@ func resourceHaproxySectionBackendDelete(ctx context.Context, d *schema.Resource
 	serverId := d.Get(ServerIdField)
 	sectionName := d.Get(NameField)
 
-	_, err := client.doRequest(ctx, "DELETE", fmt.Sprintf("api/service/haproxy/%d/section/backend/%s", serverId, sectionName), nil)
+	endpoint := haproxySectionURL(fmt.Sprintf("api/service/haproxy/%d/section/backend/%s", serverId, sectionName), haproxySectionFilePath(d))
+	_, err := client.doRequest(ctx, "DELETE", endpoint, nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

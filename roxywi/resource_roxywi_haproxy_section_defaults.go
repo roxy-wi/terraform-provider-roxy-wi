@@ -29,7 +29,7 @@ func resourceHaproxySectionDefaults() *schema.Resource {
 		DeleteContext: resourceHaproxySectionDefaultsDelete,
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: haproxySectionImport("defaults"),
 		},
 
 		Timeouts: &schema.ResourceTimeout{
@@ -40,6 +40,7 @@ func resourceHaproxySectionDefaults() *schema.Resource {
 		Description: "Manage HAProxy Defaults sections. Since this section exists by default and cannot be deleted, it can only be imported and edited. Please note that changes may cause HAProxy to restart.",
 
 		Schema: map[string]*schema.Schema{
+			FilePathField: haproxyFilePathSchema(false),
 			LogField: {
 				Type:        schema.TypeString,
 				Description: "A list loging settings.",
@@ -131,12 +132,17 @@ func resourceHaproxySectionDefaults() *schema.Resource {
 
 func resourceHaproxySectionDefaultsRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
-	serverId, _, err := resourceSectionParseId(d.Id())
+	serverId, _, filePath, err := resourceHaproxySectionParseID(d.Id())
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	filePath, err = syncHaproxySectionFilePath(d, filePath)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("api/service/haproxy/%s/section/defaults", serverId), nil)
+	endpoint := haproxySectionURL(fmt.Sprintf("api/service/haproxy/%s/section/defaults", serverId), filePath)
+	resp, err := client.doRequest(ctx, "GET", endpoint, nil)
 	if err != nil {
 		return readDiagnostics(d, err)
 	}
@@ -193,8 +199,12 @@ func resourceHaproxySectionDefaultsUpdate(ctx context.Context, d *schema.Resourc
 		TimeoutField:  timeouts,
 	}
 
-	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("api/service/haproxy/%d/section/defaults", serverId), requestBody)
+	endpoint := haproxySectionURL(fmt.Sprintf("api/service/haproxy/%d/section/defaults", serverId), haproxySectionFilePath(d))
+	_, err := client.doRequest(ctx, "PUT", endpoint, requestBody)
 	if err != nil {
+		return diag.FromErr(err)
+	}
+	if err := setSingletonHaproxySectionID(d, "defaults"); err != nil {
 		return diag.FromErr(err)
 	}
 

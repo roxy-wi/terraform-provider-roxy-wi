@@ -1,9 +1,14 @@
 package roxywi
 
 import (
+	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"net/url"
+	"strconv"
 	"strings"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func parseServersList(configList []interface{}) []map[string]interface{} {
@@ -286,4 +291,133 @@ func resourceSectionParseId(fullId string) (string, string, error) {
 	sectionName := strings.Join(parts[1:], "-")
 	return serverId, sectionName, nil
 
+}
+
+const haproxySectionIDPrefix = "haproxy-section-v2?"
+
+func haproxyFilePathSchema(forceNew bool) *schema.Schema {
+	return &schema.Schema{
+		Type:         schema.TypeString,
+		Optional:     true,
+		ForceNew:     forceNew,
+		ValidateFunc: validation.StringIsNotWhiteSpace,
+		Description:  "Absolute HAProxy configuration file managed by this resource. Requires Roxy-WI 9.2 or later; omit it to use the main configuration file.",
+	}
+}
+
+func haproxySectionURL(endpoint, filePath string) string {
+	if filePath == "" {
+		return endpoint
+	}
+	query := url.Values{}
+	query.Set(FilePathField, filePath)
+	return endpoint + "?" + query.Encode()
+}
+
+func haproxySectionFilePath(d *schema.ResourceData) string {
+	filePath, _ := d.Get(FilePathField).(string)
+	return filePath
+}
+
+func syncHaproxySectionFilePath(d *schema.ResourceData, filePath string) (string, error) {
+	if filePath == "" {
+		return haproxySectionFilePath(d), nil
+	}
+	if err := d.Set(FilePathField, filePath); err != nil {
+		return "", fmt.Errorf("set file_path: %w", err)
+	}
+	return filePath, nil
+}
+
+func haproxySectionID(serverID, sectionName, filePath string) string {
+	if filePath == "" {
+		return serverID + "-" + sectionName
+	}
+	query := url.Values{}
+	query.Set(ServerIdField, serverID)
+	query.Set(NameField, sectionName)
+	query.Set(FilePathField, filePath)
+	return haproxySectionIDPrefix + query.Encode()
+}
+
+func resourceHaproxySectionParseID(fullID string) (string, string, string, error) {
+	if strings.HasPrefix(fullID, haproxySectionIDPrefix) {
+		query, err := url.ParseQuery(strings.TrimPrefix(fullID, haproxySectionIDPrefix))
+		if err != nil {
+			return "", "", "", fmt.Errorf("parse HAProxy section ID: %w", err)
+		}
+		serverID := query.Get(ServerIdField)
+		sectionName := query.Get(NameField)
+		filePath := query.Get(FilePathField)
+		if serverID == "" || sectionName == "" || filePath == "" {
+			return "", "", "", fmt.Errorf("HAProxy section ID is missing server_id, name, or file_path")
+		}
+		if _, err := strconv.Atoi(serverID); err != nil {
+			return "", "", "", fmt.Errorf("HAProxy section ID has invalid server_id %q", serverID)
+		}
+		return serverID, sectionName, filePath, nil
+	}
+
+	if strings.Contains(fullID, "|") {
+		parts := strings.SplitN(fullID, "|", 3)
+		if len(parts) != 3 || parts[0] == "" || parts[1] == "" || parts[2] == "" {
+			return "", "", "", fmt.Errorf("expected multi-file import ID in the format 'server_id|file_path|section_name', got: %s", fullID)
+		}
+		if _, err := strconv.Atoi(parts[0]); err != nil {
+			return "", "", "", fmt.Errorf("HAProxy section ID has invalid server_id %q", parts[0])
+		}
+		return parts[0], parts[2], parts[1], nil
+	}
+
+	serverID, sectionName, err := resourceSectionParseId(fullID)
+	return serverID, sectionName, "", err
+}
+
+func setHaproxySectionIDFromAPI(d *schema.ResourceData, apiID string) error {
+	serverID, sectionName, err := resourceSectionParseId(apiID)
+	if err != nil {
+		return err
+	}
+	d.SetId(haproxySectionID(serverID, sectionName, haproxySectionFilePath(d)))
+	return nil
+}
+
+func setSingletonHaproxySectionID(d *schema.ResourceData, sectionName string) error {
+	serverID, ok := d.Get(ServerIdField).(int)
+	if !ok || serverID < 1 {
+		return fmt.Errorf("invalid server_id in Terraform state")
+	}
+	d.SetId(haproxySectionID(strconv.Itoa(serverID), sectionName, haproxySectionFilePath(d)))
+	return nil
+}
+
+func haproxySectionImport(expectedSectionName string) schema.StateContextFunc {
+	return func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+		serverID, sectionName, filePath, err := resourceHaproxySectionParseID(d.Id())
+		if err != nil {
+			return nil, err
+		}
+		if expectedSectionName != "" && sectionName != expectedSectionName {
+			return nil, fmt.Errorf("expected %s section in import ID, got %q", expectedSectionName, sectionName)
+		}
+		serverIDValue, err := strconv.Atoi(serverID)
+		if err != nil {
+			return nil, fmt.Errorf("HAProxy section ID has invalid server_id %q", serverID)
+		}
+		if err := d.Set(ServerIdField, serverIDValue); err != nil {
+			return nil, fmt.Errorf("set imported server_id: %w", err)
+		}
+		if expectedSectionName == "" {
+			if err := d.Set(NameField, sectionName); err != nil {
+				return nil, fmt.Errorf("set imported section name: %w", err)
+			}
+		}
+		if filePath != "" {
+			if err := d.Set(FilePathField, filePath); err != nil {
+				return nil, fmt.Errorf("set imported file_path: %w", err)
+			}
+		}
+		d.SetId(haproxySectionID(serverID, sectionName, filePath))
+		return []*schema.ResourceData{d}, nil
+	}
 }

@@ -28,7 +28,7 @@ func resourceHaproxySectionGlobal() *schema.Resource {
 		DeleteContext: resourceHaproxySectionGlobalDelete,
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: haproxySectionImport("global"),
 		},
 
 		Timeouts: &schema.ResourceTimeout{
@@ -39,6 +39,7 @@ func resourceHaproxySectionGlobal() *schema.Resource {
 		Description: "Manage HAProxy Global sections. Since this section exists by default and cannot be deleted, it can only be imported and edited. Please note that changes may cause HAProxy to restart.",
 
 		Schema: map[string]*schema.Schema{
+			FilePathField: haproxyFilePathSchema(false),
 			LogField: {
 				Type:        schema.TypeList,
 				Description: "A list loging settings.",
@@ -115,12 +116,17 @@ func resourceHaproxySectionGlobal() *schema.Resource {
 
 func resourceHaproxySectionGlobalRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*Config).Client
-	serverId, _, err := resourceSectionParseId(d.Id())
+	serverId, _, filePath, err := resourceHaproxySectionParseID(d.Id())
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	filePath, err = syncHaproxySectionFilePath(d, filePath)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	resp, err := client.doRequest(ctx, "GET", fmt.Sprintf("api/service/haproxy/%s/section/global", serverId), nil)
+	endpoint := haproxySectionURL(fmt.Sprintf("api/service/haproxy/%s/section/global", serverId), filePath)
+	resp, err := client.doRequest(ctx, "GET", endpoint, nil)
 	if err != nil {
 		return readDiagnostics(d, err)
 	}
@@ -185,8 +191,12 @@ func resourceHaproxySectionGlobalUpdate(ctx context.Context, d *schema.ResourceD
 		ActionField:    d.Get(ActionField),
 	}
 
-	_, err := client.doRequest(ctx, "PUT", fmt.Sprintf("api/service/haproxy/%d/section/global", serverId), requestBody)
+	endpoint := haproxySectionURL(fmt.Sprintf("api/service/haproxy/%d/section/global", serverId), haproxySectionFilePath(d))
+	_, err := client.doRequest(ctx, "PUT", endpoint, requestBody)
 	if err != nil {
+		return diag.FromErr(err)
+	}
+	if err := setSingletonHaproxySectionID(d, "global"); err != nil {
 		return diag.FromErr(err)
 	}
 

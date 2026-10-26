@@ -23,7 +23,7 @@ go build -o terraform-provider-roxywi
 Move the binary into the Terraform plugins directory:
 
 ```sh
-VERSION=1.6.0
+VERSION=1.7.0
 PLUGIN_DIR="$HOME/.terraform.d/plugins/registry.terraform.io/Roxy-wi/roxywi/${VERSION}/linux_amd64"
 mkdir -p "$PLUGIN_DIR"
 mv terraform-provider-roxywi "$PLUGIN_DIR/"
@@ -41,9 +41,13 @@ provider "roxywi" {
 }
 ```
 
-## Roxy-WI 9.1 support
+## Roxy-WI 9.2 support
 
-Provider 1.6.0 supports the certificate lifecycle and backup scheduler available in Roxy-WI 9.1 and later.
+The provider supports the certificate lifecycle and backup scheduler introduced in Roxy-WI 9.1, plus the HAProxy multi-file configuration API available in Roxy-WI 9.2 and later.
+
+- Every `roxywi_haproxy_section_*` resource accepts an optional `file_path`. Omit it to manage the main HAProxy configuration file.
+- `roxywi_haproxy_config_files` lists the ordered files detected by Roxy-WI and exposes whether multi-file mode is enabled.
+- A section in an additional file can be imported as `server_id|file_path|section_name`; the legacy `server_id-section_name` format remains valid for the main file.
 
 - Certificate create, update and delete wait for Operations to finish. Failed tasks fail the apply; timeouts keep the resource ID so an ongoing task can be inspected before retrying.
 - `dns_profile_id` binds an existing DNS profile from the same group. It cannot be combined with inline `api_key` or `api_token`. The profile's provider must match `type`.
@@ -59,6 +63,20 @@ resource "roxywi_letsencrypt" "edge" {
   type           = "cloudflare"
   dns_profile_id = 4
   draft          = true
+}
+```
+
+```hcl
+data "roxywi_haproxy_config_files" "edge" {
+  server_id = 1
+}
+
+resource "roxywi_haproxy_section_backend" "api" {
+  server_id = 1
+  file_path = "/etc/haproxy/conf.d/apps.cfg"
+  name      = "api"
+  mode      = "http"
+  balance   = "roundrobin"
 }
 ```
 

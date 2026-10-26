@@ -39,6 +39,7 @@ resource "roxywi_haproxy_section_defaults" "example" {
 ### Optional
 
 - `action` (String) What action should be taken after changing the config. Available: save, reload, restart.
+- `file_path` (String) Absolute HAProxy configuration file managed by this resource. Requires Roxy-WI 9.2 or later; omit it to use the main configuration file.
 - `log` (String) A list loging settings.
 - `maxconn` (Number) Limits the per-process connection limit.
 - `option` (String) Here you can put addinional options separeted by '
@@ -75,6 +76,8 @@ Optional:
 
 
 ## Import
+
+Use `server_id-defaults` for the main file or `server_id|file_path|defaults` for an additional HAProxy configuration file.
 
 In Terraform v1.7.0 and later, use an import block to import Group. For example:
 
